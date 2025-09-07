@@ -34,6 +34,21 @@ canvas.height = CANVAS_SIZE_Y;
 canvas.style.backgroundColor = "#000";
 const ctx = canvas.getContext("2d");
 
+/** DRAWING POINTS (TARGETS) */
+/** @type {Vec2[]} */
+const targets = [];
+let targetsColor = "#FFF";
+canvas.addEventListener("mousemove", (e) => {
+	targets.push({ x: e.offsetX, y: e.offsetY });
+});
+
+/** SPAWNER POINTS (PARTICLES STARTING COORDINATES) */
+/** @type {Vec2[]} */
+const spawners = [];
+let spawnersColor = "#FF0";
+canvas.addEventListener("click", (e) => {
+	spawners.push({ x: e.offsetX, y: e.offsetY });
+});
 
 /** PARTICLE */
 class Particle {
