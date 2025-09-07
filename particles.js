@@ -17,11 +17,11 @@ const CANVAS_SIZE_X = 400,
 	CANVAS_BACKGROUND_COLOR = "#000";
 
 // particles
-const PARTICLE_VELOCITY = 2.5,
+const PARTICLE_VELOCITY = 2,
 	PARTICLE_NUMBER = 3000,
 	PARTICLE_MAX_LENGTH = 5,
-	PARTICLE_COLOR = "#F00",
-	PARTICLE_LIFESPAN = 3 * 60,
+	PARTICLE_COLOR = null, //"#F00",
+	PARTICLE_LIFESPAN = 1 * 60,
 	PARTICLE_TARGET_POSITION_X = -PARTICLE_MAX_LENGTH * 2,
 	PARTICLE_TARGET_POSITION_Y = CANVAS_SIZE_Y - PARTICLE_MAX_LENGTH * -2,
 	PARTICLE_SPREAD = 1.5;
@@ -38,57 +38,119 @@ const ctx = canvas.getContext("2d");
 /** @type {Vec2[]} */
 const targets = [];
 let targetsColor = "#FFF";
-canvas.addEventListener("mousemove", (e) => {
-	targets.push({ x: e.offsetX, y: e.offsetY });
-});
 
 /** SPAWNER POINTS (PARTICLES STARTING COORDINATES) */
 /** @type {Vec2[]} */
 const spawners = [];
 let spawnersColor = "#FF0";
-canvas.addEventListener("click", (e) => {
-	spawners.push({ x: e.offsetX, y: e.offsetY });
+
+const cachedSpawners = localStorage.getItem("spawners");
+const cachedTargets = localStorage.getItem("targets");
+
+if (cachedSpawners) {
+	for (const spawner of JSON.parse(cachedSpawners)) {
+		spawners.push(spawner);
+	}
+}
+if (cachedTargets) {
+	for (const target of JSON.parse(cachedTargets)) {
+		targets.push(target);
+	}
+}
+
+/** LISTENERS AND ADDING POINTS LOGIC */
+const keysPressed = [];
+window.addEventListener("keydown", (key) => {
+	if (key.key === "Shift") keysPressed.push(0);
+	else if (key.key === "Control") keysPressed.push(1);
+	else if (key.key === "r") {
+		localStorage.clear();
+		window.location.reload();
+	} else if (key.key === "d") {
+		const link = document.createElement("a");
+		const objData = `{"spawners": ${JSON.stringify(targets)}, "targets": ${JSON.stringify(
+			spawners,
+		)}}`;
+		const blobData = new Blob([objData], {
+			type: "application/json",
+		});
+		const objURL = URL.createObjectURL(blobData);
+		link.href = objURL;
+		link.download = "blob1.json";
+		link.click();
+	}
 });
+window.addEventListener("keyup", () => {
+	keysPressed.splice(0, 2);
+});
+canvas.addEventListener("click", (mouse) => {
+	if (keysPressed.includes(0)) {
+		targets.push({ x: mouse.offsetX, y: mouse.offsetY });
+		localStorage.setItem("targets", JSON.stringify(targets));
+	} else if (keysPressed.includes(1)) {
+		spawners.push({ x: mouse.offsetX, y: mouse.offsetY });
+		localStorage.setItem("spawners", JSON.stringify(spawners));
+	}
+});
+
+/**
+ * @param {number} x
+ * @param {number} y
+ * @param {number} t
+ */
+function lerp(x, y, t) {
+	return x * (1 - t) + y * t;
+}
 
 /** PARTICLE */
 class Particle {
 	/** @type {Vec2} */
 	pos = { x: 0, y: 0 };
+
 	/** @type {string} */
 	color;
+
 	/** @type {number} */
 	lifespan = PARTICLE_LIFESPAN;
+
 	/** @type {Vec2[]} */
 	trail = [];
+
 	/** @type {number} */
 	trailLength = Math.floor(Math.random() * PARTICLE_MAX_LENGTH);
+
+	/** @type {number} */
 	targetIndex = Math.floor(Math.random() * targets.length);
+
 	/** @type {Vec2} */
 	target =
 		targets.length > 0
 			? targets[this.targetIndex]
 			: { x: Math.random() * -CANVAS_SIZE_X, y: Math.random() * CANVAS_SIZE_Y * 2 };
 
+	/** @type {number} */
+	spawnIndex = Math.floor(Math.random() * spawners.length);
+
 	constructor() {
 		// particle spawn position
 		this.pos.x =
-			spawners.length > 0 ? spawners[0].x : Math.floor(Math.random() * CANVAS_SIZE_X) + 50;
+			spawners.length > 0
+				? spawners[this.spawnIndex].x
+				: Math.floor(Math.random() * CANVAS_SIZE_X) + 50;
 		this.pos.y =
-			spawners.length > 0 ? spawners[0].y : Math.floor(Math.random() * CANVAS_SIZE_Y) - 50;
+			spawners.length > 0
+				? spawners[this.spawnIndex].y
+				: Math.floor(Math.random() * CANVAS_SIZE_Y) - 50;
 
 		// particle color
-		this.color = PARTICLE_COLOR ? PARTICLE_COLOR : this.#handleColor();
+		this.color = PARTICLE_COLOR
+			? PARTICLE_COLOR
+			: `#${Math.max(0x100, Math.round(Math.random() * 0xfff))}`;
 
 		// creating trail
 		for (let i = 0; i < this.trailLength; ++i) {
 			this.trail.push({ x: this.pos.x, y: this.pos.y });
 		}
-	}
-
-	#handleColor() {
-		let colorCode = Math.max(100, Math.round(Math.random() * 0xfff));
-
-		return `#${colorCode}`;
 	}
 
 	spread() {
@@ -115,9 +177,9 @@ class Particle {
 			this.trail.shift();
 		}
 
-		if (this.pos.x <= target.x) {
+		if (this.pos.x <= target.x + 10) {
 			this.pos.x += PARTICLE_VELOCITY;
-		} else if (this.pos.x > target.x) {
+		} else if (this.pos.x > target.x + 10) {
 			this.pos.x -= PARTICLE_VELOCITY;
 		}
 
@@ -129,7 +191,7 @@ class Particle {
 
 		if (this.pos.x === target.x && this.pos.y === target.y) {
 			if (targets.length > 0) {
-				this.target = targets[0];
+				this.target = targets[this.targetIndex - 1];
 			}
 		}
 	}
@@ -140,11 +202,9 @@ class Particle {
 function render(ctx) {
 	/** @type {Particle[]} */
 	const ps = [];
-	const maxTime = 40;
 
-	let time = maxTime,
-		// reusable variables for loops
-		i = 0,
+	// reusable variables
+	let i = 0,
 		y = 0;
 
 	const loop = () => {
@@ -159,10 +219,6 @@ function render(ctx) {
 		// rendering particles
 		for (; i < ps.length; ++i) {
 			ps[i].lifespan -= 1;
-			time -= 1;
-			if (time === 0) {
-				time = maxTime;
-			}
 
 			for (; y < ps[i].trail.length - 1; ++y) {
 				ctx.strokeStyle = ps[i].color;
@@ -192,6 +248,17 @@ function render(ctx) {
 		for (; i < targets.length; ++i) {
 			ctx.fillStyle = "#ffffff95";
 			ctx.fillRect(targets[i].x, targets[i].y, 4, 4);
+			ctx.fillStyle = "#fff";
+			ctx.fillText(`${i}`, targets[i].x + 2, targets[i].y - 6, 12);
+		}
+		i = 0;
+
+		// rendering spawnpoints
+		for (; i < spawners.length; ++i) {
+			ctx.fillStyle = "#4800c695";
+			ctx.fillRect(spawners[i].x, spawners[i].y, 4, 4);
+			ctx.fillStyle = "#0fde00ff";
+			ctx.fillText(`${i}`, spawners[i].x + 2, spawners[i].y - 6, 12);
 		}
 		i = 0;
 
