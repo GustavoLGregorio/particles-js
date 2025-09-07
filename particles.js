@@ -1,137 +1,189 @@
-// types
+/** TYPES */
 /**
  * @typedef Vec2
  * @property {number} x
  * @property {number} y
  */
 
-// global constants
-const CANVAS_SIZE_X = 400;
-const CANVAS_SIZE_Y = 400;
-const CANVAS_THRESHOLD = 100;
+/** GLOBALS CONSTANTS */
+// window
+const WINDOW_W = window.innerWidth,
+	WINDOW_H = window.innerHeight;
 
-const PARTICLE_VELOCITY = 3;
-const PARTICLE_NUMBER = 1000;
-const PARTICLE_SIZE_X = 4;
-const PARTICLE_SIZE_Y = 4;
-const PARTICLE_LENGHT = 10;
-const PARTICLE_COLOR = "#F00";
+// canvas
+const CANVAS_SIZE_X = 400,
+	CANVAS_SIZE_Y = 400,
+	CANVAS_THRESHOLD = 100,
+	CANVAS_BACKGROUND_COLOR = "#000";
 
-// classes
+// particles
+const PARTICLE_VELOCITY = 2.5,
+	PARTICLE_NUMBER = 3000,
+	PARTICLE_MAX_LENGTH = 5,
+	PARTICLE_COLOR = "#F00",
+	PARTICLE_LIFESPAN = 3 * 60,
+	PARTICLE_TARGET_POSITION_X = -PARTICLE_MAX_LENGTH * 2,
+	PARTICLE_TARGET_POSITION_Y = CANVAS_SIZE_Y - PARTICLE_MAX_LENGTH * -2,
+	PARTICLE_SPREAD = 1.5;
+
+/** CANVAS CONFIG */
+const canvas = document.createElement("canvas");
+document.body.append(canvas);
+canvas.width = CANVAS_SIZE_X;
+canvas.height = CANVAS_SIZE_Y;
+canvas.style.backgroundColor = "#000";
+const ctx = canvas.getContext("2d");
+
+
+/** PARTICLE */
 class Particle {
 	/** @type {Vec2} */
 	pos = { x: 0, y: 0 };
-	/** @type {Vec2} */
-	size = { x: PARTICLE_SIZE_X, y: PARTICLE_SIZE_Y };
 	/** @type {string} */
 	color;
+	/** @type {number} */
+	lifespan = PARTICLE_LIFESPAN;
+	/** @type {Vec2[]} */
+	trail = [];
+	/** @type {number} */
+	trailLength = Math.floor(Math.random() * PARTICLE_MAX_LENGTH);
+	targetIndex = Math.floor(Math.random() * targets.length);
+	/** @type {Vec2} */
+	target =
+		targets.length > 0
+			? targets[this.targetIndex]
+			: { x: Math.random() * -CANVAS_SIZE_X, y: Math.random() * CANVAS_SIZE_Y * 2 };
 
 	constructor() {
-		// generating random size
-		this.size.x = Math.floor(Math.random() * PARTICLE_SIZE_X);
-		this.size.y = Math.floor(Math.random() * PARTICLE_SIZE_Y);
+		// particle spawn position
+		this.pos.x =
+			spawners.length > 0 ? spawners[0].x : Math.floor(Math.random() * CANVAS_SIZE_X) + 50;
+		this.pos.y =
+			spawners.length > 0 ? spawners[0].y : Math.floor(Math.random() * CANVAS_SIZE_Y) - 50;
 
-		// positioning the spawn position
-		this.pos.x = Math.round(Math.random() * CANVAS_SIZE_X) + CANVAS_SIZE_X / 2;
-		this.pos.y = Math.round((Math.random() * CANVAS_SIZE_Y) / 2);
+		// particle color
+		this.color = PARTICLE_COLOR ? PARTICLE_COLOR : this.#handleColor();
 
-		// seting a color
-		this.color = PARTICLE_COLOR ? PARTICLE_COLOR : `#${Math.round(Math.random() * 899 + 100)}`;
+		// creating trail
+		for (let i = 0; i < this.trailLength; ++i) {
+			this.trail.push({ x: this.pos.x, y: this.pos.y });
+		}
 	}
 
-	move() {
+	#handleColor() {
+		let colorCode = Math.max(100, Math.round(Math.random() * 0xfff));
+
+		return `#${colorCode}`;
+	}
+
+	spread() {
 		switch (Math.round(Math.random() * 4)) {
 			case 0:
-				this.pos.x += PARTICLE_VELOCITY;
+				this.pos.x += PARTICLE_SPREAD;
 				break;
 			case 1:
-				this.pos.x -= PARTICLE_VELOCITY;
+				this.pos.x -= PARTICLE_SPREAD;
 				break;
 			case 2:
-				this.pos.y += PARTICLE_VELOCITY;
-
+				this.pos.y += PARTICLE_SPREAD;
 				break;
 			case 3:
-				this.pos.y -= PARTICLE_VELOCITY;
+				this.pos.y -= PARTICLE_SPREAD;
 				break;
 		}
 	}
 
 	/** @param {Vec2} target */
 	follow(target) {
-		if (this.pos.x < target.x) {
+		this.trail.push({ x: this.pos.x, y: this.pos.y });
+		if (this.trail.length > this.trailLength) {
+			this.trail.shift();
+		}
+
+		if (this.pos.x <= target.x) {
 			this.pos.x += PARTICLE_VELOCITY;
 		} else if (this.pos.x > target.x) {
 			this.pos.x -= PARTICLE_VELOCITY;
 		}
 
-		if (this.pos.y < target.y) {
+		if (this.pos.y <= target.y) {
 			this.pos.y += PARTICLE_VELOCITY;
 		} else if (this.pos.y > target.y) {
 			this.pos.y -= PARTICLE_VELOCITY;
 		}
+
+		if (this.pos.x === target.x && this.pos.y === target.y) {
+			if (targets.length > 0) {
+				this.target = targets[0];
+			}
+		}
 	}
 }
 
-// main function
-(function main() {
-	// canvas configuration
-	const canvas = document.createElement("canvas");
-	document.body.append(canvas);
-	canvas.width = CANVAS_SIZE_X;
-	canvas.height = CANVAS_SIZE_Y;
-	canvas.style.backgroundColor = "#000";
-	const ctx = canvas.getContext("2d");
-
-	render(ctx);
-})();
-
-// rendering logic
+/** RENDERING LOGIC */
 /** @param {CanvasRenderingContext2D} ctx */
 function render(ctx) {
-	const particles = new Set();
-	let i = 0;
+	/** @type {Particle[]} */
+	const ps = [];
+	const maxTime = 40;
 
-	// recursion loop
+	let time = maxTime,
+		// reusable variables for loops
+		i = 0,
+		y = 0;
+
 	const loop = () => {
-		if (particles.size < PARTICLE_NUMBER) {
-			for (; i < PARTICLE_NUMBER - particles.size; ++i) {
-				particles.add(new Particle());
-			}
+		ctx.fillStyle = CANVAS_BACKGROUND_COLOR;
+		ctx.fillRect(0, 0, CANVAS_SIZE_X, CANVAS_SIZE_Y);
+
+		if (ps.length < PARTICLE_NUMBER) {
+			for (; i < PARTICLE_NUMBER - ps.length; ++i) ps.push(new Particle());
 			i = 0;
 		}
 
-		for (const p of particles) {
+		// rendering particles
+		for (; i < ps.length; ++i) {
+			ps[i].lifespan -= 1;
+			time -= 1;
+			if (time === 0) {
+				time = maxTime;
+			}
+
+			for (; y < ps[i].trail.length - 1; ++y) {
+				ctx.strokeStyle = ps[i].color;
+				ctx.beginPath();
+				ctx.moveTo(ps[i].trail[y].x, ps[i].trail[y].y);
+				ctx.lineTo(ps[i].trail[y + 1].x, ps[i].trail[y + 1].y);
+				ctx.stroke();
+			}
+			y = 0;
+
+			ps[i].spread();
+			ps[i].follow(ps[i].target);
+
 			if (
-				p.pos.x < 0 - (CANVAS_THRESHOLD + PARTICLE_LENGHT) ||
-				p.pos.x > CANVAS_SIZE_X + (CANVAS_THRESHOLD + PARTICLE_LENGHT) ||
-				p.pos.y < 0 - (CANVAS_THRESHOLD + PARTICLE_LENGHT) ||
-				p.pos.y > CANVAS_SIZE_Y + (CANVAS_THRESHOLD + PARTICLE_LENGHT)
+				ps[i].lifespan <= 0 ||
+				ps[i].pos.x < -PARTICLE_MAX_LENGTH * 2 ||
+				ps[i].pos.x > CANVAS_SIZE_X + PARTICLE_MAX_LENGTH * 2 ||
+				ps[i].pos.y < -PARTICLE_MAX_LENGTH * 2 ||
+				ps[i].pos.y > CANVAS_SIZE_Y + (CANVAS_THRESHOLD + PARTICLE_MAX_LENGTH)
 			) {
-				particles.delete(p);
+				ps.splice(i, 1);
 			}
-			ctx.fillStyle = p.color;
-
-			// clearing
-			for (; i <= PARTICLE_LENGHT; ++i) {
-				ctx.clearRect(p.pos.x + i, p.pos.y - i, p.size.x, p.size.y);
-			}
-			i = 0;
-
-			// moving and following
-			p.move();
-			p.follow({ x: -CANVAS_SIZE_X + PARTICLE_LENGHT, y: CANVAS_SIZE_Y + PARTICLE_LENGHT + 10 });
-
-			// drawing
-			const PARTICLE_RANDOM_LENGHT = Math.round(Math.random() * PARTICLE_LENGHT);
-			for (; i <= PARTICLE_RANDOM_LENGHT; ++i) {
-				ctx.fillRect(p.pos.x + i, p.pos.y - i, p.size.x, p.size.y);
-			}
-			i = 0;
 		}
+		i = 0;
+
+		// rendering targets
+		for (; i < targets.length; ++i) {
+			ctx.fillStyle = "#ffffff95";
+			ctx.fillRect(targets[i].x, targets[i].y, 4, 4);
+		}
+		i = 0;
 
 		window.requestAnimationFrame(loop);
 	};
 
 	loop();
 }
+
+if (ctx) render(ctx);
