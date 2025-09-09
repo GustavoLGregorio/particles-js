@@ -18,13 +18,13 @@ const CANVAS_SIZE_X = 400,
 
 // particles
 const PARTICLE_VELOCITY = 2,
-	PARTICLE_NUMBER = 3000,
+	PARTICLE_NUMBER = 2_000,
 	PARTICLE_MAX_LENGTH = 5,
-	PARTICLE_COLOR = null, //"#F00",
-	PARTICLE_LIFESPAN = 1 * 60,
+	PARTICLE_COLOR = "#FF0",
+	PARTICLE_LIFESPAN = 2 * 60,
 	PARTICLE_TARGET_POSITION_X = -PARTICLE_MAX_LENGTH * 2,
 	PARTICLE_TARGET_POSITION_Y = CANVAS_SIZE_Y - PARTICLE_MAX_LENGTH * -2,
-	PARTICLE_SPREAD = 1.5;
+	PARTICLE_SPREAD = 3;
 
 /** CANVAS CONFIG */
 const canvas = document.createElement("canvas");
@@ -99,7 +99,17 @@ canvas.addEventListener("click", (mouse) => {
  * @param {number} t
  */
 function lerp(x, y, t) {
-	return x * (1 - t) + y * t;
+	return Math.round(x * (1 - t) + y * t);
+}
+/** @param {Vec2} vec2 */
+function vecnormalize(vec2) {
+	const magnitude = Math.sqrt(vec2.x * vec2.x + vec2.y * vec2.y);
+
+	if (magnitude === 0) {
+		return { x: 0, y: 0 };
+	}
+
+	return { x: Math.round(vec2.x / magnitude), y: Math.round(vec2.y / magnitude) };
 }
 
 /** PARTICLE */
@@ -111,7 +121,7 @@ class Particle {
 	color;
 
 	/** @type {number} */
-	lifespan = PARTICLE_LIFESPAN;
+	lifespan = Math.floor(Math.random() * PARTICLE_LIFESPAN);
 
 	/** @type {Vec2[]} */
 	trail = [];
@@ -177,21 +187,38 @@ class Particle {
 			this.trail.shift();
 		}
 
-		if (this.pos.x <= target.x + 10) {
-			this.pos.x += PARTICLE_VELOCITY;
-		} else if (this.pos.x > target.x + 10) {
-			this.pos.x -= PARTICLE_VELOCITY;
+		// Calculate direction vector
+		const dx = target.x - this.pos.x;
+		const dy = target.y - this.pos.y;
+		const distance = Math.sqrt(dx * dx + dy * dy);
+
+		// Add curved motion using sine wave
+		const time = Date.now() * 0.001; // Convert to seconds
+		const curveAmplitude = 5; // Adjust this for more/less curve
+		const curveFrequency = 0.1; // Adjust this for faster/slower oscillation
+
+		if (distance > PARTICLE_VELOCITY) {
+			// Normalize direction and apply velocity
+			const vx = (dx / distance) * PARTICLE_VELOCITY;
+			const vy = (dy / distance) * PARTICLE_VELOCITY;
+
+			// Add perpendicular motion for curve effect
+			const perpX = -vy; // Perpendicular vector
+			const perpY = vx;
+
+			// Apply sine wave to perpendicular motion
+			const curve = Math.sin(time * curveFrequency + this.pos.x * 0.05) * curveAmplitude;
+
+			this.pos.x += vx + perpX * curve * 0.1;
+			this.pos.y += vy + perpY * curve * 0.1;
 		}
 
-		if (this.pos.y <= target.y) {
-			this.pos.y += PARTICLE_VELOCITY;
-		} else if (this.pos.y > target.y) {
-			this.pos.y -= PARTICLE_VELOCITY;
-		}
-
-		if (this.pos.x === target.x && this.pos.y === target.y) {
+		if (
+			Math.abs(this.pos.x - target.x) < PARTICLE_VELOCITY &&
+			Math.abs(this.pos.y - target.y) < PARTICLE_VELOCITY
+		) {
 			if (targets.length > 0) {
-				this.target = targets[this.targetIndex - 1];
+				this.target = targets[0];
 			}
 		}
 	}
