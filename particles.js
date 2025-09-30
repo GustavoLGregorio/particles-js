@@ -45,54 +45,154 @@
  * @property {ListenersConfig} [listeners]
  */
 
-/**
- * @typedef ParticlesJS
- * @property {Configs} config
- */
-
-// end goal config
-/** @type {ParticlesJS} */
-const P = {
-	config: {
-		canvas: {
-			size: { width: undefined, height: undefined },
-			threshold: undefined,
-			backgroundColor: undefined,
-			appendCanvasTo: undefined,
-			smoothing: undefined,
-		},
-		particles: {
-			velocity: undefined,
-			quantity: undefined,
-			maxLength: undefined,
-			maxSize: undefined,
-			color: undefined,
-			lifespan: undefined,
-			initialTargetPosition: {
-				x: undefined,
-				y: undefined,
-			},
-			spreadFactor: undefined,
-		},
-		listeners: {
-			spawners: {
-				enableListener: false,
-				keyboardTrigger: "Shift",
-			},
-			targets: {
-				enableListener: false,
-				keyboardTrigger: "Control",
-			},
-		},
-	},
-};
-
 /** TYPES */
 /**
  * @typedef Vec2
  * @property {number} x
  * @property {number} y
  */
+
+class ParticlesJS {
+	/** @type {Configs | null} */
+	#config = null;
+
+	/** @type {HTMLCanvasElement | null} */
+	#canvas = null;
+
+	/** @type {CanvasRenderingContext2D | null} */
+	#ctx = null;
+
+	/** @type {Vec2[]} */
+	#spawners = [];
+
+	/** @type {Vec2[]} */
+	#targets = [];
+
+	/** @type {number[]} */
+	#keysPressed = [];
+
+	/** @type {boolean} */
+	#initialized = false;
+
+	/** @type {number | null} */
+	#loopFrameId = null;
+
+	// --- GETTERS & SETTERS ---
+
+	/** @param {Configs} configValue */
+	set config(configValue) {
+		this.#config = configValue;
+	}
+
+	/** @returns {Configs | null} */
+	get config() {
+		return this.#config;
+	}
+
+	// --- METHODS ---
+	// INITIALIZE OBJECT AND CANVAS CONFIG
+	#init() {}
+
+	// PARTICLE CREATION
+	/** @returns {Particle} */
+	#getParticle() {
+		return new Particle({}, {}, [], []);
+	}
+
+	// RENDERING LOGIC
+	#render() {
+		if (this.#ctx === undefined) return;
+
+		/** @type {Particle[]} */
+		const ps = [];
+
+		// reusable variables
+		let i = 0,
+			y = 0;
+
+		const loop = () => {
+			if (!this.#ctx) return;
+
+			this.#ctx.fillStyle = CANVAS_BACKGROUND_COLOR;
+			this.#ctx.fillRect(0, 0, CANVAS_SIZE_X, CANVAS_SIZE_Y);
+
+			if (ps.length < PARTICLE_NUMBER) {
+				for (; i < PARTICLE_NUMBER - ps.length; ++i) ps.push(this.#getParticle());
+				i = 0;
+			}
+
+			// rendering particles
+			for (; i < ps.length; ++i) {
+				ps[i].lifespan -= 1;
+
+				for (; y < ps[i].trail.length - 1; ++y) {
+					this.#ctx.strokeStyle = ps[i].color;
+					this.#ctx.beginPath();
+					this.#ctx.moveTo(ps[i].trail[y].x, ps[i].trail[y].y);
+					this.#ctx.lineTo(ps[i].trail[y + 1].x, ps[i].trail[y + 1].y);
+					this.#ctx.lineWidth = ps[i].size;
+					this.#ctx.stroke();
+				}
+				y = 0;
+
+				ps[i].spread();
+				ps[i].follow(ps[i].target);
+
+				if (
+					ps[i].lifespan <= 0 ||
+					ps[i].pos.x < -PARTICLE_MAX_LENGTH * 2 ||
+					ps[i].pos.x > CANVAS_SIZE_X + PARTICLE_MAX_LENGTH * 2 ||
+					ps[i].pos.y < -PARTICLE_MAX_LENGTH * 2 ||
+					ps[i].pos.y > CANVAS_SIZE_Y + (CANVAS_THRESHOLD + PARTICLE_MAX_LENGTH)
+				) {
+					ps.splice(i, 1);
+				}
+			}
+			i = 0;
+
+			// rendering targets
+			for (; i < targets.length; ++i) {
+				this.#ctx.fillStyle = "#ffffff95";
+				this.#ctx.fillRect(targets[i].x, targets[i].y, 4, 4);
+				this.#ctx.fillStyle = "#fff";
+				this.#ctx.fillText(`${i}`, targets[i].x + 2, targets[i].y - 6, 12);
+			}
+			i = 0;
+
+			// rendering spawnpoints
+			for (; i < spawners.length; ++i) {
+				this.#ctx.fillStyle = "#4800c695";
+				this.#ctx.fillRect(spawners[i].x, spawners[i].y, 4, 4);
+				this.#ctx.fillStyle = "#0fde00ff";
+				this.#ctx.fillText(`${i}`, spawners[i].x + 2, spawners[i].y - 6, 12);
+			}
+			i = 0;
+
+			window.requestAnimationFrame(loop);
+		};
+
+		loop();
+	}
+
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} t
+	 */
+	#lerp(x, y, t) {
+		return Math.round(x * (1 - t) + y * t);
+	}
+	/** @param {Vec2} vec2 */
+	#vecnormalize(vec2) {
+		const magnitude = Math.sqrt(vec2.x * vec2.x + vec2.y * vec2.y);
+
+		if (magnitude === 0) {
+			return { x: 0, y: 0 };
+		}
+
+		return { x: Math.round(vec2.x / magnitude), y: Math.round(vec2.y / magnitude) };
+	}
+}
 
 /** GLOBAL CONSTANTS */
 // window
@@ -185,25 +285,6 @@ canvas.addEventListener("click", (mouse) => {
 	}
 });
 
-/**
- * @param {number} x
- * @param {number} y
- * @param {number} t
- */
-function lerp(x, y, t) {
-	return Math.round(x * (1 - t) + y * t);
-}
-/** @param {Vec2} vec2 */
-function vecnormalize(vec2) {
-	const magnitude = Math.sqrt(vec2.x * vec2.x + vec2.y * vec2.y);
-
-	if (magnitude === 0) {
-		return { x: 0, y: 0 };
-	}
-
-	return { x: Math.round(vec2.x / magnitude), y: Math.round(vec2.y / magnitude) };
-}
-
 /** PARTICLE */
 class Particle {
 	/** @type {Vec2} */
@@ -236,7 +317,35 @@ class Particle {
 	/** @type {number} */
 	spawnIndex = Math.floor(Math.random() * spawners.length);
 
-	constructor() {
+	/** @type {ParticleConfig} */
+	config;
+
+	/** @type {CanvasConfig} */
+	canvasConfig;
+
+	/**
+	 * @param {ParticleConfig} particleConfig
+	 * @param {CanvasConfig} canvasConfig
+	 * @param {Vec2[]} spawners
+	 * @param {Vec2[]} targets
+	 */
+	constructor(particleConfig, canvasConfig, spawners, targets) {
+		this.config = particleConfig;
+		this.canvasConfig = canvasConfig;
+
+		const PARTICLE_MAX_SIZE = particleConfig.maxSize || 10;
+		const PARTICLE_LIFESPAN = particleConfig.lifespan || 240;
+		const PARTICLE_MAX_LENGTH = particleConfig.maxLength || 5;
+		const PARTICLE_COLOR = particleConfig.color;
+		const CANVAS_SIZE_X = canvasConfig.size?.width || 400;
+		const CANVAS_SIZE_Y = canvasConfig.size?.height || 400;
+
+		this.size = Math.round(Math.random() * PARTICLE_MAX_SIZE);
+		this.lifespan = Math.floor(Math.random() * PARTICLE_LIFESPAN);
+		this.trailLength = Math.floor(Math.random() * PARTICLE_MAX_LENGTH);
+		this.targetIndex = Math.floor(Math.random() * targets.length);
+		this.spawnIndex = Math.floor(Math.random() * spawners.length);
+
 		// particle spawn position
 		this.pos.x =
 			spawners.length > 0
@@ -246,11 +355,20 @@ class Particle {
 			spawners.length > 0
 				? spawners[this.spawnIndex].y
 				: Math.floor(Math.random() * CANVAS_SIZE_Y) - 50;
+		// prettier-ignore
+
+		// particle target
+		this.target =
+			targets.length > 0 ? targets[this.targetIndex] :
+				{
+					x: particleConfig.initialTargetPosition?.x ?? -PARTICLE_MAX_LENGTH * 2,
+					y: particleConfig.initialTargetPosition?.y ?? CANVAS_SIZE_Y - PARTICLE_MAX_LENGTH * -2,
+				};
 
 		// particle color
 		this.color = PARTICLE_COLOR
 			? PARTICLE_COLOR
-			: `#${Math.max(0x100, Math.round(Math.random() * 0xfff))}`;
+			: `#${Math.max(0x100, Math.round(Math.random() * 0xfff)).toString(16)}`;
 
 		// creating trail
 		for (let i = 0; i < this.trailLength; ++i) {
@@ -314,81 +432,9 @@ class Particle {
 	}
 }
 
-/** RENDERING LOGIC */
-/** @param {CanvasRenderingContext2D} ctx */
-function render(ctx) {
-	/** @type {Particle[]} */
-	const ps = [];
+// if (ctx) {
+// 	ctx.imageSmoothingEnabled = false;
+// 	render(ctx);
+// }
 
-	// reusable variables
-	let i = 0,
-		y = 0;
-
-	const loop = () => {
-		ctx.fillStyle = CANVAS_BACKGROUND_COLOR;
-		ctx.fillRect(0, 0, CANVAS_SIZE_X, CANVAS_SIZE_Y);
-
-		if (ps.length < PARTICLE_NUMBER) {
-			for (; i < PARTICLE_NUMBER - ps.length; ++i) ps.push(new Particle());
-			i = 0;
-		}
-
-		// rendering particles
-		for (; i < ps.length; ++i) {
-			ps[i].lifespan -= 1;
-
-			for (; y < ps[i].trail.length - 1; ++y) {
-				ctx.strokeStyle = ps[i].color;
-				ctx.beginPath();
-				ctx.moveTo(ps[i].trail[y].x, ps[i].trail[y].y);
-				ctx.lineTo(ps[i].trail[y + 1].x, ps[i].trail[y + 1].y);
-				ctx.lineWidth = ps[i].size;
-				ctx.stroke();
-			}
-			y = 0;
-
-			ps[i].spread();
-			ps[i].follow(ps[i].target);
-
-			if (
-				ps[i].lifespan <= 0 ||
-				ps[i].pos.x < -PARTICLE_MAX_LENGTH * 2 ||
-				ps[i].pos.x > CANVAS_SIZE_X + PARTICLE_MAX_LENGTH * 2 ||
-				ps[i].pos.y < -PARTICLE_MAX_LENGTH * 2 ||
-				ps[i].pos.y > CANVAS_SIZE_Y + (CANVAS_THRESHOLD + PARTICLE_MAX_LENGTH)
-			) {
-				ps.splice(i, 1);
-			}
-		}
-		i = 0;
-
-		// rendering targets
-		for (; i < targets.length; ++i) {
-			ctx.fillStyle = "#ffffff95";
-			ctx.fillRect(targets[i].x, targets[i].y, 4, 4);
-			ctx.fillStyle = "#fff";
-			ctx.fillText(`${i}`, targets[i].x + 2, targets[i].y - 6, 12);
-		}
-		i = 0;
-
-		// rendering spawnpoints
-		for (; i < spawners.length; ++i) {
-			ctx.fillStyle = "#4800c695";
-			ctx.fillRect(spawners[i].x, spawners[i].y, 4, 4);
-			ctx.fillStyle = "#0fde00ff";
-			ctx.fillText(`${i}`, spawners[i].x + 2, spawners[i].y - 6, 12);
-		}
-		i = 0;
-
-		window.requestAnimationFrame(loop);
-	};
-
-	loop();
-}
-
-if (ctx) {
-	ctx.imageSmoothingEnabled = false;
-	render(ctx);
-}
-
-export default P;
+export default ParticlesJS;

@@ -1,11 +1,13 @@
-import P from "./particles.js";
+import ParticlesJS from "./particles";
+
+const P = new ParticlesJS();
 
 P.config = {
 	canvas: {
 		appendCanvasTo: document.body,
 		backgroundColor: "#000",
 		size: { width: window.innerWidth, height: window.innerHeight },
-		smoothing: "high",
+		smoothing: undefined,
 		threshold: window.innerWidth * 1.3,
 	},
 	particles: {
