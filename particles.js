@@ -11,17 +11,18 @@ const WINDOW_W = window.innerWidth,
 	WINDOW_H = window.innerHeight;
 
 // canvas
-const CANVAS_SIZE_X = 400,
-	CANVAS_SIZE_Y = 400,
-	CANVAS_THRESHOLD = 100,
+const CANVAS_SIZE_X = window.innerWidth,
+	CANVAS_SIZE_Y = window.innerHeight,
+	CANVAS_THRESHOLD = CANVAS_SIZE_X * 1.3,
 	CANVAS_BACKGROUND_COLOR = "#000";
 
 // particles
 const PARTICLE_VELOCITY = 2,
-	PARTICLE_NUMBER = 2_000,
+	PARTICLE_NUMBER = 5_000,
 	PARTICLE_MAX_LENGTH = 5,
-	PARTICLE_COLOR = "#FF0",
-	PARTICLE_LIFESPAN = 2 * 60,
+	PARTICLE_MAX_SIZE = 10,
+	PARTICLE_COLOR = null, //"#FF0",
+	PARTICLE_LIFESPAN = 4 * 60,
 	PARTICLE_TARGET_POSITION_X = -PARTICLE_MAX_LENGTH * 2,
 	PARTICLE_TARGET_POSITION_Y = CANVAS_SIZE_Y - PARTICLE_MAX_LENGTH * -2,
 	PARTICLE_SPREAD = 3;
@@ -29,9 +30,10 @@ const PARTICLE_VELOCITY = 2,
 /** CANVAS CONFIG */
 const canvas = document.createElement("canvas");
 document.body.append(canvas);
+
 canvas.width = CANVAS_SIZE_X;
 canvas.height = CANVAS_SIZE_Y;
-canvas.style.backgroundColor = "#000";
+canvas.style.backgroundColor = CANVAS_BACKGROUND_COLOR;
 const ctx = canvas.getContext("2d");
 
 /** DRAWING POINTS (TARGETS) */
@@ -59,6 +61,7 @@ if (cachedTargets) {
 }
 
 /** LISTENERS AND ADDING POINTS LOGIC */
+/** @type {number[]} */
 const keysPressed = [];
 window.addEventListener("keydown", (key) => {
 	if (key.key === "Shift") keysPressed.push(0);
@@ -116,6 +119,9 @@ function vecnormalize(vec2) {
 class Particle {
 	/** @type {Vec2} */
 	pos = { x: 0, y: 0 };
+
+	/** @type {number} */
+	size = Math.round(Math.random() * PARTICLE_MAX_SIZE);
 
 	/** @type {string} */
 	color;
@@ -187,26 +193,21 @@ class Particle {
 			this.trail.shift();
 		}
 
-		// Calculate direction vector
 		const dx = target.x - this.pos.x;
 		const dy = target.y - this.pos.y;
 		const distance = Math.sqrt(dx * dx + dy * dy);
 
-		// Add curved motion using sine wave
-		const time = Date.now() * 0.001; // Convert to seconds
-		const curveAmplitude = 5; // Adjust this for more/less curve
-		const curveFrequency = 0.1; // Adjust this for faster/slower oscillation
+		const time = Date.now() * 0.001;
+		const curveAmplitude = 5;
+		const curveFrequency = 0.1;
 
 		if (distance > PARTICLE_VELOCITY) {
-			// Normalize direction and apply velocity
 			const vx = (dx / distance) * PARTICLE_VELOCITY;
 			const vy = (dy / distance) * PARTICLE_VELOCITY;
 
-			// Add perpendicular motion for curve effect
-			const perpX = -vy; // Perpendicular vector
+			const perpX = -vy;
 			const perpY = vx;
 
-			// Apply sine wave to perpendicular motion
 			const curve = Math.sin(time * curveFrequency + this.pos.x * 0.05) * curveAmplitude;
 
 			this.pos.x += vx + perpX * curve * 0.1;
@@ -252,6 +253,7 @@ function render(ctx) {
 				ctx.beginPath();
 				ctx.moveTo(ps[i].trail[y].x, ps[i].trail[y].y);
 				ctx.lineTo(ps[i].trail[y + 1].x, ps[i].trail[y + 1].y);
+				ctx.lineWidth = ps[i].size;
 				ctx.stroke();
 			}
 			y = 0;
@@ -295,4 +297,7 @@ function render(ctx) {
 	loop();
 }
 
-if (ctx) render(ctx);
+if (ctx) {
+	ctx.imageSmoothingEnabled = false;
+	render(ctx);
+}
