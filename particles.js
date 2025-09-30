@@ -49,6 +49,44 @@
  * @typedef ParticlesJS
  * @property {Configs} config
  */
+
+// end goal config
+/** @type {ParticlesJS} */
+const P = {
+	config: {
+		canvas: {
+			size: { width: undefined, height: undefined },
+			threshold: undefined,
+			backgroundColor: undefined,
+			appendCanvasTo: undefined,
+			smoothing: undefined,
+		},
+		particles: {
+			velocity: undefined,
+			quantity: undefined,
+			maxLength: undefined,
+			maxSize: undefined,
+			color: undefined,
+			lifespan: undefined,
+			initialTargetPosition: {
+				x: undefined,
+				y: undefined,
+			},
+			spreadFactor: undefined,
+		},
+		listeners: {
+			spawners: {
+				enableListener: false,
+				keyboardTrigger: "Shift",
+			},
+			targets: {
+				enableListener: false,
+				keyboardTrigger: "Control",
+			},
+		},
+	},
+};
+
 /** TYPES */
 /**
  * @typedef Vec2
