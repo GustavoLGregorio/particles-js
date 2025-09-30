@@ -1,3 +1,54 @@
+/** LIB TYPES */
+/**
+ * @typedef ScreenDimensions
+ * @property {number} [width]
+ * @property {number} [height]
+ */
+
+/**
+ * @typedef CanvasConfig
+ * @property {ScreenDimensions} [size]
+ * @property {number} [threshold]
+ * @property {string} [backgroundColor]
+ * @property {HTMLElement} [appendCanvasTo]
+ * @property {"low" | "medium" | "high"} [smoothing]
+ */
+
+/**
+ * @typedef ParticleConfig
+ * @property {number} [velocity]
+ * @property {number} [quantity]
+ * @property {number} [maxLength]
+ * @property {number} [maxSize]
+ * @property {string | null} [color]
+ * @property {number} [lifespan]
+ * @property {Partial<Vec2>} [initialTargetPosition]
+ * @property {number} [spreadFactor]
+ */
+
+/**
+ * @typedef Listener
+ * @property {boolean} enableListener
+ * @property {string} keyboardTrigger
+ */
+
+/**
+ * @typedef ListenersConfig
+ * @property {Listener} [spawners]
+ * @property {Listener} [targets]
+ */
+
+/**
+ * @typedef Configs
+ * @property {CanvasConfig} canvas
+ * @property {ParticleConfig} particles
+ * @property {ListenersConfig} [listeners]
+ */
+
+/**
+ * @typedef ParticlesJS
+ * @property {Configs} config
+ */
 /** TYPES */
 /**
  * @typedef Vec2
@@ -5,14 +56,14 @@
  * @property {number} y
  */
 
-/** GLOBALS CONSTANTS */
+/** GLOBAL CONSTANTS */
 // window
 const WINDOW_W = window.innerWidth,
 	WINDOW_H = window.innerHeight;
 
 // canvas
-const CANVAS_SIZE_X = window.innerWidth,
-	CANVAS_SIZE_Y = window.innerHeight,
+const CANVAS_SIZE_X = 400,
+	CANVAS_SIZE_Y = 400,
 	CANVAS_THRESHOLD = CANVAS_SIZE_X * 1.3,
 	CANVAS_BACKGROUND_COLOR = "#000";
 
@@ -301,3 +352,5 @@ if (ctx) {
 	ctx.imageSmoothingEnabled = false;
 	render(ctx);
 }
+
+export default P;
