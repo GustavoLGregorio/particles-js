@@ -101,6 +101,7 @@ class ParticlesJS {
 	}
 
 	// --- METHODS ---
+
 	// INITIALIZE OBJECT AND CANVAS CONFIG
 	#init() {
 		if (!this.#config) return;
@@ -236,97 +237,6 @@ class ParticlesJS {
 		return { x: Math.round(vec2.x / magnitude), y: Math.round(vec2.y / magnitude) };
 	}
 }
-
-/** GLOBAL CONSTANTS */
-// // window
-// const WINDOW_W = window.innerWidth,
-// 	WINDOW_H = window.innerHeight;
-
-// // canvas
-// const CANVAS_SIZE_X = 400,
-// 	CANVAS_SIZE_Y = 400,
-// 	CANVAS_THRESHOLD = CANVAS_SIZE_X * 1.3,
-// 	CANVAS_BACKGROUND_COLOR = "#000";
-
-// particles
-// const PARTICLE_VELOCITY = 2,
-// 	PARTICLE_NUMBER = 5_000,
-// 	PARTICLE_MAX_LENGTH = 5,
-// 	PARTICLE_MAX_SIZE = 10,
-// 	PARTICLE_COLOR = null, //"#FF0",
-// 	PARTICLE_LIFESPAN = 4 * 60,
-// 	PARTICLE_TARGET_POSITION_X = -PARTICLE_MAX_LENGTH * 2,
-// 	PARTICLE_TARGET_POSITION_Y = CANVAS_SIZE_Y - PARTICLE_MAX_LENGTH * -2,
-// 	PARTICLE_SPREAD = 3;
-
-/** CANVAS CONFIG */
-// const canvas = document.createElement("canvas");
-// document.body.append(canvas);
-
-// canvas.width = CANVAS_SIZE_X;
-// canvas.height = CANVAS_SIZE_Y;
-// canvas.style.backgroundColor = CANVAS_BACKGROUND_COLOR;
-// const ctx = canvas.getContext("2d");
-
-/** DRAWING POINTS (TARGETS) */
-// /** @type {Vec2[]} */
-// const targets = [];
-// let targetsColor = "#FFF";
-
-// /** SPAWNER POINTS (PARTICLES STARTING COORDINATES) */
-// /** @type {Vec2[]} */
-// const spawners = [];
-// let spawnersColor = "#FF0";
-
-// const cachedSpawners = localStorage.getItem("spawners");
-// const cachedTargets = localStorage.getItem("targets");
-
-// if (cachedSpawners) {
-// 	for (const spawner of JSON.parse(cachedSpawners)) {
-// 		spawners.push(spawner);
-// 	}
-// }
-// if (cachedTargets) {
-// 	for (const target of JSON.parse(cachedTargets)) {
-// 		targets.push(target);
-// 	}
-// }
-
-/** LISTENERS AND ADDING POINTS LOGIC */
-// /** @type {number[]} */
-// const keysPressed = [];
-// window.addEventListener("keydown", (key) => {
-// 	if (key.key === "Shift") keysPressed.push(0);
-// 	else if (key.key === "Control") keysPressed.push(1);
-// 	else if (key.key === "r") {
-// 		localStorage.clear();
-// 		window.location.reload();
-// 	} else if (key.key === "d") {
-// 		const link = document.createElement("a");
-// 		const objData = `{"spawners": ${JSON.stringify(targets)}, "targets": ${JSON.stringify(
-// 			spawners,
-// 		)}}`;
-// 		const blobData = new Blob([objData], {
-// 			type: "application/json",
-// 		});
-// 		const objURL = URL.createObjectURL(blobData);
-// 		link.href = objURL;
-// 		link.download = "blob1.json";
-// 		link.click();
-// 	}
-// });
-// window.addEventListener("keyup", () => {
-// 	keysPressed.splice(0, 2);
-// });
-// canvas.addEventListener("click", (mouse) => {
-// 	if (keysPressed.includes(0)) {
-// 		targets.push({ x: mouse.offsetX, y: mouse.offsetY });
-// 		localStorage.setItem("targets", JSON.stringify(targets));
-// 	} else if (keysPressed.includes(1)) {
-// 		spawners.push({ x: mouse.offsetX, y: mouse.offsetY });
-// 		localStorage.setItem("spawners", JSON.stringify(spawners));
-// 	}
-// });
 
 /** PARTICLE */
 class Particle {
@@ -481,3 +391,55 @@ class Particle {
 }
 
 export default ParticlesJS;
+
+// --- ADD LATER (listeners and clickables)
+
+// const cachedSpawners = localStorage.getItem("spawners");
+// const cachedTargets = localStorage.getItem("targets");
+
+// if (cachedSpawners) {
+// 	for (const spawner of JSON.parse(cachedSpawners)) {
+// 		spawners.push(spawner);
+// 	}
+// }
+// if (cachedTargets) {
+// 	for (const target of JSON.parse(cachedTargets)) {
+// 		targets.push(target);
+// 	}
+// }
+
+/** LISTENERS AND ADDING POINTS LOGIC */
+// /** @type {number[]} */
+// const keysPressed = [];
+// window.addEventListener("keydown", (key) => {
+// 	if (key.key === "Shift") keysPressed.push(0);
+// 	else if (key.key === "Control") keysPressed.push(1);
+// 	else if (key.key === "r") {
+// 		localStorage.clear();
+// 		window.location.reload();
+// 	} else if (key.key === "d") {
+// 		const link = document.createElement("a");
+// 		const objData = `{"spawners": ${JSON.stringify(targets)}, "targets": ${JSON.stringify(
+// 			spawners,
+// 		)}}`;
+// 		const blobData = new Blob([objData], {
+// 			type: "application/json",
+// 		});
+// 		const objURL = URL.createObjectURL(blobData);
+// 		link.href = objURL;
+// 		link.download = "blob1.json";
+// 		link.click();
+// 	}
+// });
+// window.addEventListener("keyup", () => {
+// 	keysPressed.splice(0, 2);
+// });
+// canvas.addEventListener("click", (mouse) => {
+// 	if (keysPressed.includes(0)) {
+// 		targets.push({ x: mouse.offsetX, y: mouse.offsetY });
+// 		localStorage.setItem("targets", JSON.stringify(targets));
+// 	} else if (keysPressed.includes(1)) {
+// 		spawners.push({ x: mouse.offsetX, y: mouse.offsetY });
+// 		localStorage.setItem("spawners", JSON.stringify(spawners));
+// 	}
+// });
