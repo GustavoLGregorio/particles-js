@@ -1,4 +1,11 @@
-/** LIB TYPES */
+/** TYPES */
+/**
+ * @typedef Vec2
+ * @property {number} x
+ * @property {number} y
+ */
+
+/** LIB */
 /**
  * @typedef ScreenDimensions
  * @property {number} width
@@ -8,22 +15,30 @@
 /**
  * @typedef CanvasConfig
  * @property {ScreenDimensions} size
- * @property {number} threshold
+ * @property {number} [threshold]
  * @property {string} backgroundColor
- * @property {HTMLElement} appendCanvasTo
+ * @property {HTMLElement} appendTo
  * @property {"low" | "medium" | "high"} [smoothing]
  */
 
 /**
+ * @typedef ParticleCurvature
+ * @property {number} [amplitude]
+ * @property {number} [frequency]
+ * @property {"cos" | "sin" | "tan" | number} [curve]
+ */
+
+/**
  * @typedef ParticleConfig
- * @property {number} velocity
- * @property {number} quantity
- * @property {number} maxLength
+ * @property {number} [quantity]
+ * @property {number} [velocity]
+ * @property {number} [maxLength]
  * @property {number} [maxSize]
  * @property {string | null} [color]
  * @property {number} [lifespan]
  * @property {Partial<Vec2>} [initialTargetPosition]
- * @property {number} spreadFactor
+ * @property {number} [spreadFactor]
+ * @property {ParticleCurvature} [curvature]
  */
 
 /**
@@ -49,17 +64,10 @@
 /**
  * @typedef ParticlesJSConfig
  * @property {CanvasConfig} canvas
- * @property {ParticleConfig} particles
- * @property {Vec2[]} targets
- * @property {Vec2[]} spawners
+ * @property {ParticleConfig} [particles]
+ * @property {Vec2[]} [targets]
+ * @property {Vec2[]} [spawners]
  * @property {ListenersConfig} [listeners]
- */
-
-/** TYPES */
-/**
- * @typedef Vec2
- * @property {number} x
- * @property {number} y
  */
 
 class ParticlesJS {
@@ -91,6 +99,13 @@ class ParticlesJS {
 
 	/** @param {ParticlesJSConfig} configValue */
 	set config(configValue) {
+		if (
+			!configValue.canvas.appendTo ||
+			!configValue.canvas.size ||
+			!configValue.canvas.backgroundColor
+		) {
+			throw new Error("ParticlesJS.config necessary properties where not found");
+		}
 		this.#config = configValue;
 		this.#init();
 	}
@@ -108,7 +123,7 @@ class ParticlesJS {
 
 		// CANVAS CONFIG
 		this.#canvas = document.createElement("canvas");
-		this.#config.canvas.appendCanvasTo.append(this.#canvas);
+		this.#config.canvas.appendTo.append(this.#canvas);
 
 		this.#canvas.width = this.#config.canvas.size.width;
 		this.#canvas.height = this.#config.canvas.size.height;
@@ -132,17 +147,20 @@ class ParticlesJS {
 			throw new Error("Object was not configured");
 		}
 
-		const targets = this.#config.targets ? this.#config.targets : [];
-		const spawners = this.#config.spawners ? this.#config.spawners : [];
+		const targets = this.#config.targets ?? [];
+		const spawners = this.#config.spawners ?? [];
+		const particlesConfig = this.#config.particles ?? {};
 
-		return new Particle(this.#config.particles, this.#config.canvas, spawners, targets);
+		return new Particle(particlesConfig, this.#config.canvas, spawners, targets);
 	}
 
 	// RENDERING LOGIC
 	#render() {
 		if (!this.#config || !this.#ctx) return;
 
-		const config = this.#config;
+		const canvasThreshold = this.#config.canvas.threshold ?? 100;
+		const particleQuantity = this.#config.particles?.quantity ?? 2_000;
+		const config = this.#config ?? {};
 
 		/** @type {Particle[]} */
 		const ps = [];
@@ -152,13 +170,15 @@ class ParticlesJS {
 			y = 0;
 
 		const loop = () => {
-			if (!this.#config || !this.#ctx) return;
+			if (!this.#config || !this.#ctx) {
+				throw new Error("ParticlesJS.config or canvas.context not found");
+			}
 
 			this.#ctx.fillStyle = config.canvas.backgroundColor;
 			this.#ctx.fillRect(0, 0, config.canvas.size.width, config.canvas.size.height);
 
-			if (ps.length < config.particles.quantity) {
-				for (; i < config.particles.quantity - ps.length; ++i) ps.push(this.#getParticle());
+			if (ps.length < particleQuantity) {
+				for (; i < particleQuantity - ps.length; ++i) ps.push(this.#getParticle());
 				i = 0;
 			}
 
@@ -181,36 +201,37 @@ class ParticlesJS {
 
 				if (
 					ps[i].lifespan <= 0 ||
-					ps[i].pos.x < -config.particles.maxLength * 2 ||
-					ps[i].pos.x > config.canvas.size.width + config.particles.maxLength * 2 ||
-					ps[i].pos.y < -config.particles.maxLength * 2 ||
-					ps[i].pos.y >
-						config.canvas.size.height + (config.canvas.threshold + config.particles.maxLength)
+					ps[i].pos.x < -canvasThreshold ||
+					ps[i].pos.x > config.canvas.size.width + canvasThreshold ||
+					ps[i].pos.y < -canvasThreshold ||
+					ps[i].pos.y > config.canvas.size.height + canvasThreshold
 				) {
 					ps.splice(i, 1);
 				}
 			}
 			i = 0;
 
-			if (!config.targets) return;
 			// rendering targets
-			for (; i < config.targets.length; ++i) {
-				this.#ctx.fillStyle = "#ffffff95";
-				this.#ctx.fillRect(config.targets[i].x, config.targets[i].y, 4, 4);
-				this.#ctx.fillStyle = "#fff";
-				this.#ctx.fillText(`${i}`, config.targets[i].x + 2, config.targets[i].y - 6, 12);
+			if (config.targets) {
+				for (; i < config.targets.length; ++i) {
+					this.#ctx.fillStyle = "#ffffff95";
+					this.#ctx.fillRect(config.targets[i].x, config.targets[i].y, 4, 4);
+					this.#ctx.fillStyle = "#fff";
+					this.#ctx.fillText(`${i}`, config.targets[i].x + 2, config.targets[i].y - 6, 12);
+				}
+				i = 0;
 			}
-			i = 0;
 
-			if (!config.spawners) return;
 			// rendering spawnpoints
-			for (; i < config.spawners.length; ++i) {
-				this.#ctx.fillStyle = "#4800c695";
-				this.#ctx.fillRect(config.spawners[i].x, config.spawners[i].y, 4, 4);
-				this.#ctx.fillStyle = "#0fde00ff";
-				this.#ctx.fillText(`${i}`, config.spawners[i].x + 2, config.spawners[i].y - 6, 12);
+			if (config.spawners) {
+				for (; i < config.spawners.length; ++i) {
+					this.#ctx.fillStyle = "#4800c695";
+					this.#ctx.fillRect(config.spawners[i].x, config.spawners[i].y, 4, 4);
+					this.#ctx.fillStyle = "#0fde00ff";
+					this.#ctx.fillText(`${i}`, config.spawners[i].x + 2, config.spawners[i].y - 6, 12);
+				}
+				i = 0;
 			}
-			i = 0;
 
 			window.requestAnimationFrame(loop);
 		};
@@ -292,7 +313,7 @@ class Particle {
 		this.targetsArr = targets;
 
 		const PARTICLE_MAX_SIZE = particleConfig.maxSize || 10;
-		const PARTICLE_LIFESPAN = particleConfig.lifespan || 240;
+		const PARTICLE_LIFESPAN = particleConfig.lifespan ?? 240;
 		const PARTICLE_MAX_LENGTH = particleConfig.maxLength || 5;
 		const PARTICLE_COLOR = particleConfig.color;
 		const CANVAS_SIZE_X = canvasConfig.size?.width || 400;
@@ -335,18 +356,19 @@ class Particle {
 	}
 
 	spread() {
+		const spread = this.config.spreadFactor ?? 3;
 		switch (Math.round(Math.random() * 4)) {
 			case 0:
-				this.pos.x += this.config.spreadFactor;
+				this.pos.x += spread;
 				break;
 			case 1:
-				this.pos.x -= this.config.spreadFactor;
+				this.pos.x -= spread;
 				break;
 			case 2:
-				this.pos.y += this.config.spreadFactor;
+				this.pos.y += spread;
 				break;
 			case 3:
-				this.pos.y -= this.config.spreadFactor;
+				this.pos.y -= spread;
 				break;
 		}
 	}
@@ -363,29 +385,40 @@ class Particle {
 		const distance = Math.sqrt(dx * dx + dy * dy);
 
 		const time = Date.now() * 0.001;
-		const curveAmplitude = 5;
-		const curveFrequency = 0.1;
+		const curvature = this.config.curvature ?? {};
+		const curveAmplitude = curvature.amplitude ?? 5;
+		const curveFrequency = curvature.frequency ?? 0.1;
+		const velocity = this.config.velocity ?? 5;
 
-		if (distance > this.config.velocity) {
-			const vx = (dx / distance) * this.config.velocity;
-			const vy = (dy / distance) * this.config.velocity;
+		if (distance > velocity) {
+			const vx = (dx / distance) * velocity;
+			const vy = (dy / distance) * velocity;
 
 			const perpX = -vy;
 			const perpY = vx;
 
-			const curve = Math.sin(time * curveFrequency + this.pos.x * 0.05) * curveAmplitude;
+			let curve;
+
+			if (typeof curvature.curve === "number") {
+				curve = curvature.curve;
+			} else if (curvature.curve === "cos") {
+				curve = Math.cos(time * curveFrequency + this.pos.x * 0.05) * curveAmplitude;
+			} else if (curvature.curve === "tan") {
+				curve = Math.tan(time * curveFrequency + this.pos.x * 0.05) * curveAmplitude;
+			} else {
+				curve = Math.sin(time * curveFrequency + this.pos.x * 0.05) * curveAmplitude;
+			}
 
 			this.pos.x += vx + perpX * curve * 0.1;
 			this.pos.y += vy + perpY * curve * 0.1;
 		}
 
 		if (
-			Math.abs(this.pos.x - target.x) < this.config.velocity &&
-			Math.abs(this.pos.y - target.y) < this.config.velocity
+			Math.abs(this.pos.x - target.x) < velocity &&
+			Math.abs(this.pos.y - target.y) < velocity &&
+			this.targetsArr.length > 0
 		) {
-			if (this.targetsArr.length > 0) {
-				this.target = this.targetsArr[0];
-			}
+			this.target = this.targetsArr[this.targetIndex];
 		}
 	}
 }
