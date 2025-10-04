@@ -438,7 +438,7 @@ class Particle {
         this.target =
             targets.length > 0
 				? targets[this.targetIndex]
-                : { x: -PARTICLE_LENGTH * 2, y: CANVAS_SIZE_Y - PARTICLE_LENGTH * -2 };
+                : { x: CANVAS_SIZE_X / 2, y: CANVAS_SIZE_Y / 2 };
 
         // particle color
         this.color =
