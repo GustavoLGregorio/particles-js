@@ -1,11 +1,11 @@
-/** TYPES */
+/** LOGIC TYPES */
 /**
  * @typedef Vec2
  * @property {number} x
  * @property {number} y
  */
 
-/** LIB */
+/** LIB TYPES */
 /**
  * @typedef ScreenDimensions
  * @property {number} width
@@ -40,7 +40,6 @@
  * @property {number} [lifespan]
  * @property {number} [maxLifespan]
  * @property {string | null} [color]
- * @property {Partial<Vec2>} [initialTargetPosition]
  * @property {number} [spreadFactor]
  * @property {ParticleCurvature} [curvature]
  */
@@ -177,7 +176,7 @@ class ParticlesJS {
         if (!this.#config || !this.#ctx || !this.#config.particles) return;
 
         const canvasThreshold = this.#config.canvas.threshold ?? 100;
-        const config = this.#config ?? {};
+        const config = this.#config;
 
         /** @type {Particle[]} */
         const ps = [];
@@ -200,8 +199,9 @@ class ParticlesJS {
 
             const particleQuantity = this.#config.particles.quantity ?? 2_000;
             if (ps.length < particleQuantity) {
-                for (; i < particleQuantity - ps.length; ++i)
+                for (; i < particleQuantity - ps.length; ++i) {
                     ps.push(this.#getParticle());
+                }
                 i = 0;
             }
 
@@ -281,7 +281,7 @@ class ParticlesJS {
     #attachListeners() {
         if (!this.#canvas) return;
 
-        // LISTENERS AND ADDING POINTS LOGIC
+        // listeners and 'adding spawns and targets' logic
         window.addEventListener("keydown", (key) => {
             switch (key.key) {
                 case "Shift":
@@ -296,15 +296,18 @@ class ParticlesJS {
                     break;
                 case "d":
                     const link = document.createElement("a");
+
                     const objData = `{"spawners": ${JSON.stringify(this.#targets)}, "targets": ${JSON.stringify(
                         this.#spawners,
                     )}}`;
+
                     const blobData = new Blob([objData], {
                         type: "application/json",
                     });
+
                     const objURL = URL.createObjectURL(blobData);
                     link.href = objURL;
-                    link.download = "blob1.json";
+                    link.download = "particles-js.json";
                     link.click();
                     break;
             }
@@ -330,28 +333,6 @@ class ParticlesJS {
                 );
             }
         });
-    }
-
-    /**
-     * @param {number} x
-     * @param {number} y
-     * @param {number} t
-     */
-    #lerp(x, y, t) {
-        return Math.round(x * (1 - t) + y * t);
-    }
-    /** @param {Vec2} vec2 */
-    #vecnormalize(vec2) {
-        const magnitude = Math.sqrt(vec2.x * vec2.x + vec2.y * vec2.y);
-
-        if (magnitude === 0) {
-            return { x: 0, y: 0 };
-        }
-
-        return {
-            x: Math.round(vec2.x / magnitude),
-            y: Math.round(vec2.y / magnitude),
-        };
     }
 }
 
