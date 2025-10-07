@@ -5,13 +5,13 @@
  * @property {number} y
  */
 
-/** LIB TYPES */
+/* --- LIB TYPES --- */
+/* --- CANVAS --- */
 /**
  * @typedef ScreenDimensions
  * @property {number} width
  * @property {number} height
  */
-
 /**
  * @typedef CanvasConfig
  * @property {ScreenDimensions} size
@@ -21,13 +21,13 @@
  * @property {"low" | "medium" | "high"} [smoothing]
  */
 
+/* --- PARTICLES --- */
 /**
  * @typedef ParticleCurvature
  * @property {number} [amplitude]
  * @property {number} [frequency]
  * @property {'sin' | 'cos' | 'tan' | number} [curve]
  */
-
 /**
  * @typedef ParticlesConfig
  * @property {number} [quantity]
@@ -39,62 +39,89 @@
  * @property {number} [maxSize]
  * @property {number} [lifespan]
  * @property {number} [maxLifespan]
- * @property {string | null} [color]
+ * @property {string | string[] | null} [color]
  * @property {number} [spreadFactor]
  * @property {ParticleCurvature} [curvature]
  */
+/**
+ * @typedef InitialPositionsConfig
+ * @property {Vec2[]} [targets]
+ * @property {Vec2[]} [spawners]
+ */
 
+/* --- STORAGE --- */
+/**
+ * @typedef StorageConfig
+ * @property {"sessionStorage" | "localStorage"} storageType
+ * @property {StoragePositions} [storeListenersPositions]
+ * @property {StoragePositions} [storeNewPositions]
+ */
+/**
+ * @typedef StoragePositions
+ * @property {boolean} targets
+ * @property {boolean} spawners
+ */
+
+/* --- LISTENERS --- */
 /**
  * @typedef ListenerIdentifier
- * @property {string} color
- * @property {number} size
- * @property {string} font
+ * @property {string} [color]
+ * @property {number} [size]
  */
-
 /**
  * @typedef Listener
- * @property {boolean} enableListener
- * @property {string} keyboardTrigger
+ * @property {string} [keyboardTrigger]
  * @property {ListenerIdentifier} [identifier]
  */
-
 /**
  * @typedef ListenersConfig
+ * @property {string} [resetPositions]
+ * @property {string} [downloadPositions]
  * @property {Listener} [spawners]
  * @property {Listener} [targets]
  */
 
+/* --- MAIN CONFIG --- */
 /**
  * @typedef ParticlesJSConfig
  * @property {CanvasConfig} canvas
  * @property {ParticlesConfig} [particles]
- * @property {Vec2[]} [targets]
- * @property {Vec2[]} [spawners]
+ * @property {InitialPositionsConfig} initialPositions
  * @property {ListenersConfig} [listeners]
+ * @property {ListenersConfig} [initialPositions]
+ * @property {StorageConfig} [storage]
  */
+//* @property {Vec2[]} [targets]
+//* @property {Vec2[]} [spawners]
 
 class ParticlesJS {
+    // MAIN CONFIG
     /** @type {ParticlesJSConfig | null} */
     #config = null;
 
+    // CANVAS
     /** @type {HTMLCanvasElement | null} */
     #canvas = null;
-
     /** @type {CanvasRenderingContext2D | null} */
     #ctx = null;
 
+    // POSITIONS
     /** @type {Vec2[]} */
     #spawners = [];
-
     /** @type {Vec2[]} */
     #targets = [];
 
+    // LISTENERS
     /** @type {number[]} */
     #keysPressed = [];
 
+    // STORAGE
+    #storageTargetsName = "particles-js.targets";
+    #storageSpawnersName = "particles-js.spawners";
+
+    // LOOP
     /** @type {boolean} */
     #initialized = false;
-
     /** @type {number | null} */
     #loopFrameId = null;
 
@@ -102,24 +129,30 @@ class ParticlesJS {
 
     /** @param {ParticlesJSConfig} configValue */
     set config(configValue) {
-        if (
-            !configValue.canvas.appendTo ||
-            !configValue.canvas.size ||
-            !configValue.canvas.backgroundColor
-        ) {
+        if (!configValue.canvas.appendTo || !configValue.canvas.size || !configValue.canvas.backgroundColor) {
             throw new Error("ParticlesJS.config necessary properties where not found");
         }
 
-        const storageSpawners = localStorage.getItem("particles-js.spawners");
-        const storageTargets = localStorage.getItem("particles-js.targets");
+        const storageSpawners =
+            sessionStorage.getItem(this.#storageSpawnersName) ??
+            localStorage.getItem(this.#storageSpawnersName);
+        const storageTargets =
+            sessionStorage.getItem(this.#storageTargetsName) ??
+            localStorage.getItem(this.#storageTargetsName);
+
+        // const initialPositions = configValue.initialPositions;
 
         if (storageSpawners) {
             this.#spawners = JSON.parse(storageSpawners);
-        } else if (configValue.spawners) this.#spawners = configValue.spawners;
+        } else if (configValue.initialPositions?.spawners) {
+            this.#spawners = configValue.initialPositions?.spawners;
+        }
 
         if (storageTargets) {
             this.#targets = JSON.parse(storageTargets);
-        } else if (configValue.targets) this.#targets = configValue.targets;
+        } else if (configValue.initialPositions?.targets) {
+            this.#targets = configValue.initialPositions?.targets;
+        }
 
         this.#config = configValue;
         this.#initCanvas();
@@ -129,6 +162,19 @@ class ParticlesJS {
     /** @returns {ParticlesJSConfig | null} */
     get config() {
         return this.#config;
+    }
+
+    get canvas() {
+        if (this.#canvas === null) throw new Error("Canvas doesn't exist. Initialize the config first");
+
+        return this.#canvas;
+    }
+
+    get targets() {
+        return this.#targets;
+    }
+    get spawners() {
+        return this.#spawners;
     }
 
     // --- METHODS ---
@@ -163,12 +209,7 @@ class ParticlesJS {
             throw new Error("Object was not configured");
         }
 
-        return new Particle(
-            this.#config.particles,
-            this.#config.canvas,
-            this.#spawners,
-            this.#targets,
-        );
+        return new Particle(this.#config.particles, this.#config.canvas, this.#spawners, this.#targets);
     }
 
     // RENDERING LOGIC
@@ -190,12 +231,7 @@ class ParticlesJS {
                 throw new Error("ParticlesJS.config or canvas.context not found");
             }
 
-            this.#ctx.clearRect(
-                0,
-                0,
-                config.canvas.size.width,
-                config.canvas.size.height,
-            );
+            this.#ctx.clearRect(0, 0, config.canvas.size.width, config.canvas.size.height);
 
             const particleQuantity = this.#config.particles.quantity ?? 2_000;
             if (ps.length < particleQuantity) {
@@ -236,38 +272,25 @@ class ParticlesJS {
             i = 0;
 
             // rendering targets
-            if (config.targets) {
-                for (; i < config.targets.length; ++i) {
-                    this.#ctx.fillStyle = "#ffffff95";
-                    this.#ctx.fillRect(config.targets[i].x, config.targets[i].y, 4, 4);
-                    this.#ctx.fillStyle = "#fff";
-                    this.#ctx.fillText(
-                        `${i}`,
-                        config.targets[i].x + 2,
-                        config.targets[i].y - 6,
-                        12,
-                    );
+            if (this.#targets) {
+                for (; i < this.#targets.length; ++i) {
+                    const size = config.listeners?.targets?.identifier?.size ?? 4;
+                    this.#ctx.fillStyle = config.listeners?.targets?.identifier?.color ?? "transparent";
+                    this.#ctx.fillRect(this.#targets[i].x, this.#targets[i].y, size, size);
+                    this.#ctx.fillStyle = config.listeners?.targets?.identifier?.color ?? "transparent";
+                    this.#ctx.fillText(`${i}`, this.#targets[i].x, this.#targets[i].y - 5, 32);
                 }
                 i = 0;
             }
 
             // rendering spawnpoints
-            if (config.spawners) {
-                for (; i < config.spawners.length; ++i) {
-                    this.#ctx.fillStyle = "#4800c695";
-                    this.#ctx.fillRect(
-                        config.spawners[i].x,
-                        config.spawners[i].y,
-                        4,
-                        4,
-                    );
-                    this.#ctx.fillStyle = "#0fde00ff";
-                    this.#ctx.fillText(
-                        `${i}`,
-                        config.spawners[i].x + 2,
-                        config.spawners[i].y - 6,
-                        12,
-                    );
+            if (this.#spawners) {
+                for (; i < this.#spawners.length; ++i) {
+                    const size = config.listeners?.spawners?.identifier?.size ?? 4;
+                    this.#ctx.fillStyle = config.listeners?.spawners?.identifier?.color ?? "transparent";
+                    this.#ctx.fillRect(this.#spawners[i].x, this.#spawners[i].y, size, size);
+                    this.#ctx.fillStyle = config.listeners?.spawners?.identifier?.color ?? "transparent";
+                    this.#ctx.fillText(`${i}`, this.#spawners[i].x, this.#spawners[i].y - 5, 32);
                 }
                 i = 0;
             }
@@ -278,23 +301,28 @@ class ParticlesJS {
         loop();
     }
 
+    // LISTENERS LOGIC
     #attachListeners() {
         if (!this.#canvas) return;
+
+        const listeners = this.#config?.listeners;
+        const storage = this.#config?.storage;
 
         // listeners and 'adding spawns and targets' logic
         window.addEventListener("keydown", (key) => {
             switch (key.key) {
-                case "Shift":
+                case listeners?.targets?.keyboardTrigger:
                     this.#keysPressed.push(0);
                     break;
-                case "Control":
+                case listeners?.spawners?.keyboardTrigger:
                     this.#keysPressed.push(1);
                     break;
-                case "r":
+                case listeners?.resetPositions:
                     localStorage.clear();
+                    sessionStorage.clear();
                     window.location.reload();
                     break;
-                case "d":
+                case listeners?.downloadPositions:
                     const link = document.createElement("a");
 
                     const objData = `{"spawners": ${JSON.stringify(this.#targets)}, "targets": ${JSON.stringify(
@@ -320,19 +348,68 @@ class ParticlesJS {
             if (this.#keysPressed.includes(0)) {
                 this.#targets.push({ x: mouse.offsetX, y: mouse.offsetY });
 
-                localStorage.setItem(
-                    "particles-js.targets",
-                    JSON.stringify(this.#targets),
-                );
+                if (storage?.storeListenersPositions?.targets) {
+                    if (storage?.storageType === "localStorage") {
+                        localStorage.setItem(this.#storageTargetsName, JSON.stringify(this.#targets));
+                    } else if (storage?.storageType === "sessionStorage") {
+                        sessionStorage.setItem(this.#storageTargetsName, JSON.stringify(this.#targets));
+                    }
+                }
             } else if (this.#keysPressed.includes(1)) {
                 this.#spawners.push({ x: mouse.offsetX, y: mouse.offsetY });
 
-                localStorage.setItem(
-                    "particles-js.spawners",
-                    JSON.stringify(this.#spawners),
-                );
+                if (storage?.storeListenersPositions?.spawners) {
+                    if (storage?.storageType === "localStorage") {
+                        localStorage.setItem(this.#storageSpawnersName, JSON.stringify(this.#spawners));
+                    } else if (storage?.storageType === "sessionStorage") {
+                        sessionStorage.setItem(this.#storageSpawnersName, JSON.stringify(this.#spawners));
+                    }
+                }
             }
         });
+    }
+
+    // POSITIONS
+    /** @param {Vec2} newTarget */
+    addTarget(newTarget) {
+        this.#targets.push(newTarget);
+        if (this.#config?.storage?.storeNewPositions?.targets) {
+            if (this.#config.storage.storageType === "sessionStorage") {
+                sessionStorage.setItem(this.#storageTargetsName, JSON.stringify(this.#targets));
+            } else if (this.#config.storage.storageType === "localStorage") {
+                localStorage.setItem(this.#storageTargetsName, JSON.stringify(this.#targets));
+            }
+        }
+    }
+    /** @param {Vec2} newSpawner */
+    addSpawner(newSpawner) {
+        this.#spawners.push(newSpawner);
+        if (this.#config?.storage?.storeNewPositions?.spawners) {
+            if (this.#config.storage.storageType === "sessionStorage") {
+                sessionStorage.setItem(this.#storageSpawnersName, JSON.stringify(this.#spawners));
+            } else if (this.#config.storage.storageType === "localStorage") {
+                localStorage.setItem(this.#storageSpawnersName, JSON.stringify(this.#spawners));
+            }
+        }
+    }
+
+    /** @param {Vec2} targetPosition */
+    removeTargetAt(targetPosition) {
+        const targets = this.#targets;
+        for (let i = 0; i < targets.length; ++i) {
+            if (targetPosition.x === targets[i].x && targetPosition.y === targets[i].y) {
+                targets.splice(i, 1);
+            }
+        }
+    }
+    /** @param {Vec2} spawnerPosition */
+    removeSpawnerAt(spawnerPosition) {
+        const spawner = this.#spawners;
+        for (let i = 0; i < spawner.length; ++i) {
+            if (spawnerPosition.x === spawner[i].x && spawnerPosition.y === spawner[i].y) {
+                spawner.splice(i, 1);
+            }
+        }
     }
 }
 
@@ -406,13 +483,9 @@ class Particle {
 
         // particle spawn position
         this.pos.x =
-            spawners.length > 0
-                ? spawners[this.spawnIndex].x
-                : Math.floor(Math.random() * CANVAS_SIZE_X);
+            spawners.length > 0 ? spawners[this.spawnIndex].x : Math.floor(Math.random() * CANVAS_SIZE_X);
         this.pos.y =
-            spawners.length > 0
-                ? spawners[this.spawnIndex].y
-                : Math.floor(Math.random() * CANVAS_SIZE_Y);
+            spawners.length > 0 ? spawners[this.spawnIndex].y : Math.floor(Math.random() * CANVAS_SIZE_Y);
 
         // particle target
         // prettier-ignore
@@ -422,9 +495,13 @@ class Particle {
                 : { x: CANVAS_SIZE_X / 2, y: CANVAS_SIZE_Y / 2 };
 
         // particle color
-        this.color =
-            pConfig.color ??
-            `#${Math.max(0x100, Math.round(Math.random() * 0xfff)).toString(16)}`;
+        if (pConfig.color && Array.isArray(pConfig.color)) {
+            const iColor = Math.round(Math.random() * pConfig.color.length);
+            this.color = pConfig.color[iColor];
+        } else {
+            this.color =
+                pConfig.color ?? `#${Math.max(0x100, Math.round(Math.random() * 0xfff)).toString(16)}`;
+        }
 
         // creating trail
         for (let i = 0; i < this.trailLength; ++i) {
@@ -494,17 +571,11 @@ class Particle {
             if (typeof curvature.curve === "number") {
                 curve = curvature.curve;
             } else if (curvature.curve === "cos") {
-                curve =
-                    Math.cos(time * curveFrequency + this.pos.x * 0.05) *
-                    curveAmplitude;
+                curve = Math.cos(time * curveFrequency + this.pos.x * 0.05) * curveAmplitude;
             } else if (curvature.curve === "tan") {
-                curve =
-                    Math.tan(time * curveFrequency + this.pos.x * 0.05) *
-                    curveAmplitude;
+                curve = Math.tan(time * curveFrequency + this.pos.x * 0.05) * curveAmplitude;
             } else {
-                curve =
-                    Math.sin(time * curveFrequency + this.pos.x * 0.05) *
-                    curveAmplitude;
+                curve = Math.sin(time * curveFrequency + this.pos.x * 0.05) * curveAmplitude;
             }
 
             this.pos.x += vx + perpX * curve * 0.1;

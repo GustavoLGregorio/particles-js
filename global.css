@@ -1,0 +1,44 @@
+@font-face {
+    font-family: Lalezar;
+    src: url("./fonts/Lalezar-Regular.woff2");
+}
+@font-face {
+    font-family: TiltWarp;
+    src: url("./fonts/TiltWarp-Regular-VariableFont.woff2");
+}
+
+:root {
+    color: white;
+    background-color: #0a0c12;
+}
+
+body {
+    margin: 0;
+    width: 100dvw;
+    height: 100dvh;
+    overflow: hidden;
+    background-color: #0a0c12;
+}
+
+main {
+    width: 100%;
+    position: absolute;
+    top: 0;
+    display: flex;
+    justify-content: center;
+    font-family: TiltWarp;
+    letter-spacing: 2px;
+}
+footer {
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    font-family: Lalezar;
+}
+
+footer > * {
+    font-size: 1rem;
+    letter-spacing: 1px;
+}
