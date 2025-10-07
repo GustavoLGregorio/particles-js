@@ -19,6 +19,7 @@
  * @property {string} backgroundColor
  * @property {HTMLElement} appendTo
  * @property {"low" | "medium" | "high"} [smoothing]
+ * @property {string} id
  */
 
 /* --- PARTICLES --- */
@@ -26,7 +27,8 @@
  * @typedef ParticleCurvature
  * @property {number} [amplitude]
  * @property {number} [frequency]
- * @property {'sin' | 'cos' | 'tan' | number} [curve]
+ * @property {'sin' | 'cos' | number} [curve]
+ * @property {Vec2} [axisCurve]
  */
 /**
  * @typedef ParticlesConfig
@@ -102,6 +104,8 @@ class ParticlesJS {
     // CANVAS
     /** @type {HTMLCanvasElement | null} */
     #canvas = null;
+    /** @type {string | null} */
+    #canvasId = null;
     /** @type {CanvasRenderingContext2D | null} */
     #ctx = null;
 
@@ -116,14 +120,14 @@ class ParticlesJS {
     #keysPressed = [];
 
     // STORAGE
-    #storageTargetsName = "particles-js.targets";
-    #storageSpawnersName = "particles-js.spawners";
+    #storageTargetsName = `particles-js.${this.#canvasId}.targets`;
+    #storageSpawnersName = `particles-js.${this.#canvasId}.spawners`;
 
     // LOOP
     /** @type {boolean} */
-    #initialized = false;
-    /** @type {number | null} */
-    #loopFrameId = null;
+    #running = false;
+    /** @type {number} */
+    #loopPrevFrame = 0;
 
     // --- GETTERS & SETTERS ---
 
@@ -133,6 +137,8 @@ class ParticlesJS {
             throw new Error("ParticlesJS.config necessary properties where not found");
         }
 
+        this.#canvasId = configValue.canvas.id;
+
         const storageSpawners =
             sessionStorage.getItem(this.#storageSpawnersName) ??
             localStorage.getItem(this.#storageSpawnersName);
@@ -140,12 +146,12 @@ class ParticlesJS {
             sessionStorage.getItem(this.#storageTargetsName) ??
             localStorage.getItem(this.#storageTargetsName);
 
-        // const initialPositions = configValue.initialPositions;
-
         if (storageSpawners) {
             this.#spawners = JSON.parse(storageSpawners);
         } else if (configValue.initialPositions?.spawners) {
-            this.#spawners = configValue.initialPositions?.spawners;
+            for (let i = 0; i < configValue.initialPositions.spawners.length; ++i) {
+                this.#spawners.push(configValue.initialPositions.spawners[i]);
+            }
         }
 
         if (storageTargets) {
@@ -181,10 +187,11 @@ class ParticlesJS {
 
     // INITIALIZE OBJECT AND CANVAS CONFIG
     #initCanvas() {
-        if (!this.#config) return;
+        if (!this.#config || !this.#config.canvas.id || !this.#canvasId) return;
 
         // CANVAS CONFIG
         this.#canvas = document.createElement("canvas");
+        this.#canvas.id = this.#canvasId;
         this.#config.canvas.appendTo.append(this.#canvas);
 
         this.#canvas.width = this.#config.canvas.size.width;
@@ -198,23 +205,20 @@ class ParticlesJS {
             this.#ctx?.imageSmoothingEnabled;
             this.#ctx.imageSmoothingQuality = this.#config.canvas.smoothing;
         }
-
-        this.#render();
     }
 
     // PARTICLE CREATION
     /** @returns {Particle} */
     #getParticle() {
-        if (!this.#config || !this.#config.particles) {
+        if (!this.#config || !this.#config) {
             throw new Error("Object was not configured");
         }
-
-        return new Particle(this.#config.particles, this.#config.canvas, this.#spawners, this.#targets);
+        return new Particle(this.#config.particles ?? {}, this.#config.canvas, this.#spawners, this.#targets);
     }
 
     // RENDERING LOGIC
     #render() {
-        if (!this.#config || !this.#ctx || !this.#config.particles) return;
+        if (!this.#config || !this.#ctx || !this.#config) return;
 
         const canvasThreshold = this.#config.canvas.threshold ?? 100;
         const config = this.#config;
@@ -226,14 +230,18 @@ class ParticlesJS {
         let i = 0;
         let y = 0;
 
-        const loop = () => {
-            if (!this.#config || !this.#ctx || !this.#config.particles) {
+        /** @param {number} currentTime */
+        const updateLoop = (currentTime) => {
+            if (!this.#config || !this.#ctx || !this.#config) {
                 throw new Error("ParticlesJS.config or canvas.context not found");
             }
 
+            const deltaTime = (currentTime - this.#loopPrevFrame) / 1000;
+
             this.#ctx.clearRect(0, 0, config.canvas.size.width, config.canvas.size.height);
 
-            const particleQuantity = this.#config.particles.quantity ?? 2_000;
+            // adding particles
+            const particleQuantity = this.#config.particles?.quantity ?? 2_000;
             if (ps.length < particleQuantity) {
                 for (; i < particleQuantity - ps.length; ++i) {
                     ps.push(this.#getParticle());
@@ -243,7 +251,7 @@ class ParticlesJS {
 
             // rendering particles
             for (; i < ps.length; ++i) {
-                ps[i].lifespan -= 1;
+                ps[i].lifespan -= 1 * deltaTime * 60;
 
                 for (; y < ps[i].trail.length - 1; ++y) {
                     this.#ctx.strokeStyle = ps[i].color;
@@ -255,8 +263,13 @@ class ParticlesJS {
                 }
                 y = 0;
 
-                ps[i].spread();
-                ps[i].follow(ps[i].target);
+                ps[i].spread(deltaTime);
+
+                if (config.particles?.velocity === 0) {
+                    ps[i].follow(ps[i].target, 0);
+                } else {
+                    ps[i].follow(ps[i].target, deltaTime);
+                }
 
                 // removing particle
                 if (
@@ -295,10 +308,11 @@ class ParticlesJS {
                 i = 0;
             }
 
-            window.requestAnimationFrame(loop);
+            this.#loopPrevFrame = currentTime;
+            window.requestAnimationFrame(updateLoop);
         };
 
-        loop();
+        updateLoop(this.#loopPrevFrame);
     }
 
     // LISTENERS LOGIC
@@ -367,6 +381,18 @@ class ParticlesJS {
                 }
             }
         });
+    }
+
+    // STATE HANDLING
+    start() {
+        if (!this.#running) {
+            this.#render();
+        }
+    }
+    pause() {
+        if (this.#running && this.#loopPrevFrame) {
+            window.cancelAnimationFrame(this.#loopPrevFrame);
+        }
     }
 
     // POSITIONS
@@ -469,14 +495,14 @@ class Particle {
         this.spawnersArr = spawners;
         this.targetsArr = targets;
 
-        const PARTICLE_LENGTH = pConfig.length ?? 10;
+        const PARTICLE_LENGTH = pConfig.length ?? 2;
         const CANVAS_SIZE_X = Math.abs(canvasConfig.size?.width) || 400;
         const CANVAS_SIZE_Y = Math.abs(canvasConfig.size?.height) || 400;
 
         this.size = this.#getRangeProp(pConfig.size, pConfig.maxSize, 5);
-        this.velocity = this.#getRangeProp(pConfig.velocity, pConfig.maxVelocity, 5);
+        this.velocity = this.#getRangeProp(pConfig.velocity, pConfig.maxVelocity, 2);
         this.trailLength = this.#getRangeProp(pConfig.length, pConfig.maxLength, 2);
-        this.lifespan = this.#getRangeProp(pConfig.lifespan, pConfig.maxLifespan, 30);
+        this.lifespan = this.#getRangeProp(pConfig.lifespan, pConfig.maxLifespan, 60);
 
         this.targetIndex = Math.floor(Math.random() * targets.length);
         this.spawnIndex = Math.floor(Math.random() * spawners.length);
@@ -491,7 +517,7 @@ class Particle {
         // prettier-ignore
         this.target =
             targets.length > 0
-				? targets[this.targetIndex]
+                ? targets[this.targetIndex]
                 : { x: CANVAS_SIZE_X / 2, y: CANVAS_SIZE_Y / 2 };
 
         // particle color
@@ -524,26 +550,30 @@ class Particle {
             : Math.max(MIN, MAX, defaultValue);
     }
 
-    spread() {
+    /** @param {number} dt */
+    spread(dt) {
         const spread = this.config.spreadFactor ?? 3;
         switch (Math.round(Math.random() * 4)) {
             case 0:
-                this.pos.x += spread;
+                this.pos.x += spread * 50 * dt;
                 break;
             case 1:
-                this.pos.x -= spread;
+                this.pos.x -= spread * 50 * dt;
                 break;
             case 2:
-                this.pos.y += spread;
+                this.pos.y += spread * 50 * dt;
                 break;
             case 3:
-                this.pos.y -= spread;
+                this.pos.y -= spread * 50 * dt;
                 break;
         }
     }
 
-    /** @param {Vec2} target */
-    follow(target) {
+    /**
+     * @param {Vec2} target
+     * @param {number} dt
+     */
+    follow(target, dt) {
         this.trail.push({ x: this.pos.x, y: this.pos.y });
         if (this.trail.length > this.trailLength) {
             this.trail.shift();
@@ -560,8 +590,8 @@ class Particle {
         const velocity = this.velocity;
 
         if (distance > velocity) {
-            const vx = (dx / distance) * velocity;
-            const vy = (dy / distance) * velocity;
+            const vx = (dx / distance) * velocity * 100 * dt;
+            const vy = (dy / distance) * velocity * 100 * dt;
 
             const perpX = -vy;
             const perpY = vx;
@@ -572,14 +602,15 @@ class Particle {
                 curve = curvature.curve;
             } else if (curvature.curve === "cos") {
                 curve = Math.cos(time * curveFrequency + this.pos.x * 0.05) * curveAmplitude;
-            } else if (curvature.curve === "tan") {
-                curve = Math.tan(time * curveFrequency + this.pos.x * 0.05) * curveAmplitude;
             } else {
                 curve = Math.sin(time * curveFrequency + this.pos.x * 0.05) * curveAmplitude;
             }
 
-            this.pos.x += vx + perpX * curve * 0.1;
-            this.pos.y += vy + perpY * curve * 0.1;
+            const aCX = curvature.axisCurve?.x ?? 0;
+            const aCY = curvature.axisCurve?.y ?? 0;
+
+            this.pos.x += vx + perpX * curve * 0.1 * (aCX * 10) * dt;
+            this.pos.y += vy + perpY * curve * 0.1 * (aCY * 10) * dt;
         }
 
         if (
@@ -587,7 +618,7 @@ class Particle {
             Math.abs(this.pos.y - target.y) < velocity &&
             this.targetsArr.length > 0
         ) {
-            this.target = this.targetsArr[this.targetIndex];
+            // this.target = this.targetsArr[this.targetIndex];
         }
     }
 }
