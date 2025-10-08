@@ -1,8 +1,8 @@
-import EntropyParticles from "../dist/index.js";
+import EntropyParticles from "./lib/entropy-particles.js";
 
 // importing types
-/** @typedef {import("../dist/index.js").EntropyParticlesConfig} EntropyParticlesConfig */
-/** @typedef {import("../dist/index.js").Vec2} Vec2 */
+/** @typedef {import("./lib/entropy-particles.js").EntropyParticlesConfig} EntropyParticlesConfig */
+/** @typedef {import("./lib/entropy-particles.js").Vec2} Vec2 */
 
 const win_width = window.innerWidth;
 const win_height = window.innerHeight;
