@@ -123,11 +123,10 @@ class ParticlesJS {
     #storageTargetsName = `particles-js.${this.#canvasId}.targets`;
     #storageSpawnersName = `particles-js.${this.#canvasId}.spawners`;
 
-    // LOOP
-    /** @type {boolean} */
-    #running = false;
-    /** @type {number} */
+    // UPDATE LOOP
+    #isRunning = false;
     #loopPrevFrame = 0;
+    #loopId = 0;
 
     // --- GETTERS & SETTERS ---
 
@@ -236,6 +235,11 @@ class ParticlesJS {
                 throw new Error("ParticlesJS.config or canvas.context not found");
             }
 
+            if (!this.#isRunning) {
+                console.info("ended");
+                return;
+            }
+
             const deltaTime = (currentTime - this.#loopPrevFrame) / 1000;
 
             this.#ctx.clearRect(0, 0, config.canvas.size.width, config.canvas.size.height);
@@ -309,7 +313,7 @@ class ParticlesJS {
             }
 
             this.#loopPrevFrame = currentTime;
-            window.requestAnimationFrame(updateLoop);
+            this.#loopId = window.requestAnimationFrame(updateLoop);
         };
 
         updateLoop(this.#loopPrevFrame);
@@ -385,14 +389,15 @@ class ParticlesJS {
 
     // STATE HANDLING
     start() {
-        if (!this.#running) {
+        if (!this.#isRunning) {
+            this.#isRunning = true;
             this.#render();
         }
     }
     pause() {
-        if (this.#running && this.#loopPrevFrame) {
-            window.cancelAnimationFrame(this.#loopPrevFrame);
-        }
+        console.info("startPause");
+        this.#isRunning = false;
+        window.cancelAnimationFrame(this.#loopId);
     }
 
     // POSITIONS
