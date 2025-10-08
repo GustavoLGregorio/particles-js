@@ -1,0 +1,11 @@
+# demo archives
+index.html
+script.js
+global.css
+demo/
+demo/fonts/
+
+# tools
+.prettierrc
+.gitignore
+node_modules/
