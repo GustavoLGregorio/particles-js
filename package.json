@@ -1,9 +1,10 @@
 {
     "name": "entropy-particles",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "description": "A lightweight and configurable JavaScript particle engine for creating dynamic, colorful, and chaotic visual effects. Features multi-system control, event listeners, curvature-based motion, and persistent state storage. Ideal for chaotic movements and patterns.",
     "keywords": [
         "javascript",
+        "typescript",
         "jsdoc",
         "particles",
         "engine",
@@ -23,16 +24,18 @@
     "license": "MIT",
     "author": "Gustavo Luiz Gregorio",
     "type": "module",
-    "main": "dist/index.js",
+    "main": "src/entropy-particles.js",
+    "types": "types/entropy-particles.d.ts",
     "files": [
-        "dist/index.js",
+        "src/",
+        "types/",
         "README.md",
         "LICENSE"
     ],
     "exports": {
         ".": {
-            "import": "./dist/index.js",
-            "require": "./dist/index.js"
+            "import": "./src/entropy-particles.js",
+            "require": "./src/entropy-particles.js"
         }
     }
 }
