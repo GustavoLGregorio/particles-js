@@ -85,7 +85,7 @@
 
 /* --- MAIN CONFIG --- */
 /**
- * @typedef ParticlesJSConfig
+ * @typedef EntropyParticlesConfig
  * @property {CanvasConfig} canvas
  * @property {ParticlesConfig} [particles]
  * @property {InitialPositionsConfig} initialPositions
@@ -96,9 +96,9 @@
 //* @property {Vec2[]} [targets]
 //* @property {Vec2[]} [spawners]
 
-class ParticlesJS {
+class EntropyParticles {
     // MAIN CONFIG
-    /** @type {ParticlesJSConfig | null} */
+    /** @type {EntropyParticlesConfig | null} */
     #config = null;
 
     // CANVAS
@@ -130,10 +130,10 @@ class ParticlesJS {
 
     // --- GETTERS & SETTERS ---
 
-    /** @param {ParticlesJSConfig} configValue */
+    /** @param {EntropyParticlesConfig} configValue */
     set config(configValue) {
         if (!configValue.canvas.appendTo || !configValue.canvas.size || !configValue.canvas.backgroundColor) {
-            throw new Error("ParticlesJS.config necessary properties where not found");
+            throw new Error("EntropyParticles.config necessary properties where not found");
         }
 
         this.#canvasId = configValue.canvas.id;
@@ -164,7 +164,7 @@ class ParticlesJS {
         this.#attachListeners();
     }
 
-    /** @returns {ParticlesJSConfig | null} */
+    /** @returns {EntropyParticlesConfig | null} */
     get config() {
         return this.#config;
     }
@@ -232,7 +232,7 @@ class ParticlesJS {
         /** @param {number} currentTime */
         const updateLoop = (currentTime) => {
             if (!this.#config || !this.#ctx || !this.#config) {
-                throw new Error("ParticlesJS.config or canvas.context not found");
+                throw new Error("EntropyParticles.config or canvas.context not found");
             }
 
             if (!this.#isRunning) {
@@ -628,4 +628,4 @@ class Particle {
     }
 }
 
-export default ParticlesJS;
+export default EntropyParticles;
