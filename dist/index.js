@@ -88,13 +88,18 @@
  * @typedef EntropyParticlesConfig
  * @property {CanvasConfig} canvas - Canvas setup (dimensions, color, and target container).
  * @property {ParticlesConfig} [particles] - Particle behavior and visual configuration.
- * @property {InitialPositionsConfig} initialPositions - Starting targets and spawners positions.
+ * @property {InitialPositionsConfig} [initialPositions] - Starting targets and spawners positions.
  * @property {ListenersConfig} [listeners] - Keyboard/mouse listener configurations.
  * @property {StorageConfig} [storage] - Storage options for saving and restoring positions.
  */
 
 // MAIN CLASS
 
+/**
+ * @class
+ * Main class for managing particle systems.
+ * Handles initialization, rendering, and event listeners.
+ */
 class EntropyParticles {
     // MAIN CONFIG
     /** @type {EntropyParticlesConfig | null} */
@@ -129,7 +134,11 @@ class EntropyParticles {
 
     // --- GETTERS & SETTERS ---
 
-    /** @param {EntropyParticlesConfig} configValue */
+    /**
+     * Applies and validates the provided configuration.
+     * Initializes the canvas and event listeners.
+     * @param {EntropyParticlesConfig} configValue - Full configuration object.
+     */
     set config(configValue) {
         if (!configValue.canvas.appendTo || !configValue.canvas.size || !configValue.canvas.backgroundColor) {
             throw new Error("EntropyParticles.config necessary properties where not found");
@@ -163,27 +172,33 @@ class EntropyParticles {
         this.#attachListeners();
     }
 
-    /** @returns {EntropyParticlesConfig | null} */
+    /** @returns {EntropyParticlesConfig | null} - Returns current configuration. */
     get config() {
         return this.#config;
     }
 
+    /** @returns {HTMLCanvasElement} - Returns initialized canvas element. */
     get canvas() {
         if (this.#canvas === null) throw new Error("Canvas doesn't exist. Initialize the config first");
 
         return this.#canvas;
     }
 
+    /** @returns {Vec2[]} - Returns active target positions. */
     get targets() {
         return this.#targets;
     }
+    /** @returns {Vec2[]} - Returns active spawner positions. */
     get spawners() {
         return this.#spawners;
     }
 
     // --- METHODS ---
 
-    // INITIALIZE OBJECT AND CANVAS CONFIG
+    /**
+     * Initializes the canvas element with size, color, and smoothing.
+     * Creates and attaches the canvas to the target HTML container.
+     */
     #initCanvas() {
         if (!this.#config || !this.#config.canvas.id || !this.#canvasId) return;
 
@@ -205,8 +220,10 @@ class EntropyParticles {
         }
     }
 
-    // PARTICLE CREATION
-    /** @returns {Particle} */
+    /**
+     * Creates and returns a new particle instance.
+     * @returns {Particle} - New particle object.
+     */
     #getParticle() {
         if (!this.#config || !this.#config) {
             throw new Error("Object was not configured");
@@ -214,7 +231,10 @@ class EntropyParticles {
         return new Particle(this.#config.particles ?? {}, this.#config.canvas, this.#spawners, this.#targets);
     }
 
-    // RENDERING LOGIC
+    /**
+     * Starts the particle rendering loop.
+     * Handles particle creation, drawing, and cleanup.
+     */
     #render() {
         if (!this.#config || !this.#ctx || !this.#config) return;
 
@@ -318,7 +338,10 @@ class EntropyParticles {
         updateLoop(this.#loopPrevFrame);
     }
 
-    // LISTENERS LOGIC
+    /**
+     * Attaches keyboard and mouse listeners for interaction.
+     * Enables dynamic creation and saving of targets/spawners.
+     */
     #attachListeners() {
         if (!this.#canvas) return;
 
@@ -386,21 +409,31 @@ class EntropyParticles {
         });
     }
 
-    // STATE HANDLING
+    /**
+     * Starts the animation loop.
+     * Begins continuous particle rendering.
+     */
     start() {
         if (!this.#isRunning) {
             this.#isRunning = true;
             this.#render();
         }
     }
+
+    /**
+     * Pauses the animation loop.
+     * Stops updating and rendering frames.
+     */
     pause() {
         console.info("startPause");
         this.#isRunning = false;
         window.cancelAnimationFrame(this.#loopId);
     }
 
-    // POSITIONS
-    /** @param {Vec2} newTarget */
+    /**
+     * Adds a new target point and optionally persists it to storage (storage config).
+     * @param {Vec2} newTarget - Target position to add.
+     */
     addTarget(newTarget) {
         this.#targets.push(newTarget);
         if (this.#config?.storage?.storeNewPositions?.targets) {
@@ -411,7 +444,11 @@ class EntropyParticles {
             }
         }
     }
-    /** @param {Vec2} newSpawner */
+
+    /**
+     * Adds a new spawner point and optionally persists it to storage (storage config).
+     * @param {Vec2} newSpawner - Spawner position to add.
+     */
     addSpawner(newSpawner) {
         this.#spawners.push(newSpawner);
         if (this.#config?.storage?.storeNewPositions?.spawners) {
@@ -423,7 +460,10 @@ class EntropyParticles {
         }
     }
 
-    /** @param {Vec2} targetPosition */
+    /**
+     * Removes a target at the given position.
+     * @param {Vec2} targetPosition - Target coordinates to remove.
+     */
     removeTargetAt(targetPosition) {
         const targets = this.#targets;
         for (let i = 0; i < targets.length; ++i) {
@@ -432,7 +472,11 @@ class EntropyParticles {
             }
         }
     }
-    /** @param {Vec2} spawnerPosition */
+
+    /**
+     * Removes a spawner at the given position.
+     * @param {Vec2} spawnerPosition - Spawner coordinates to remove.
+     */
     removeSpawnerAt(spawnerPosition) {
         const spawner = this.#spawners;
         for (let i = 0; i < spawner.length; ++i) {
@@ -445,6 +489,11 @@ class EntropyParticles {
 
 // PARTICLES CLASS
 
+/**
+ * Represents a single moving particle.
+ * Handles physics, position, curvature, and trail logic.
+ * @private
+ */
 class Particle {
     /** @type {ParticlesConfig} */
     config;
@@ -489,10 +538,11 @@ class Particle {
     spawnIndex;
 
     /**
-     * @param {ParticlesConfig} pConfig
-     * @param {CanvasConfig} canvasConfig
-     * @param {Vec2[]} spawners
-     * @param {Vec2[]} targets
+     * Creates a new particle instance with random or defined properties.
+     * @param {ParticlesConfig} pConfig - Particle behavior configuration.
+     * @param {CanvasConfig} canvasConfig - Canvas parameters for positioning.
+     * @param {Vec2[]} spawners - Available spawn locations.
+     * @param {Vec2[]} targets - Available movement targets.
      */
     constructor(pConfig, canvasConfig, spawners, targets) {
         this.config = pConfig;
@@ -541,9 +591,11 @@ class Particle {
     }
 
     /**
-     * @param {number | undefined} min
-     * @param {number | undefined} max
-     * @param {number} defaultValue
+     * Returns a random value within a given numeric range.
+     * @param {number | undefined} min - Minimum value.
+     * @param {number | undefined} max - Maximum value.
+     * @param {number} defaultValue - Fallback value.
+     * @returns {number} - Generated number within range.
      */
     #getRangeProp(min, max, defaultValue) {
         const MIN = min ? Math.abs(min) : defaultValue;
@@ -555,7 +607,11 @@ class Particle {
             : Math.max(MIN, MAX, defaultValue);
     }
 
-    /** @param {number} dt */
+    /**
+     * Adds chaotic spread to the particle’s position.
+     * Produces random direction movement.
+     * @param {number} dt - Delta time since last frame.
+     */
     spread(dt) {
         const spread = this.config.spreadFactor ?? 3;
         switch (Math.round(Math.random() * 4)) {
@@ -575,8 +631,10 @@ class Particle {
     }
 
     /**
-     * @param {Vec2} target
-     * @param {number} dt
+     * Moves the particle toward its target with optional curvature.
+     * Updates trail and applies curved motion.
+     * @param {Vec2} target - Target point to follow.
+     * @param {number} dt - Delta time since last frame.
      */
     follow(target, dt) {
         this.trail.push({ x: this.pos.x, y: this.pos.y });
