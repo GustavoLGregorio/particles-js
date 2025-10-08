@@ -1,7 +1,7 @@
 import EntropyParticles from "./lib/entropy-particles.js";
 
 // importing types
-/** @typedef {import("./lib/entropy-particles.js").EntropyParticlesConfig} EntropyParticlesConfig */
+/** @typedef {import("./lib/entropy-particles.js").EntropyParticlesConfig} EPConfig */
 /** @typedef {import("./lib/entropy-particles.js").Vec2} Vec2 */
 
 const win_width = window.innerWidth;
@@ -11,7 +11,7 @@ const pSpace = new EntropyParticles();
 const pGalaxy = new EntropyParticles();
 const pGalaxyColors = ["red", "#c30020ff", "indigo", "purple", "magenta", "#d500aeff"];
 
-/** @type {EntropyParticlesConfig} */
+/** @type {EPConfig} */
 const pGalaxyConfig = {
     canvas: {
         id: "space",
@@ -86,7 +86,7 @@ const pGalaxyConfig = {
     // },
 };
 
-/** @type {EntropyParticlesConfig} */
+/** @type {EPConfig} */
 const pSpaceConfig = {
     canvas: {
         id: "galaxy",

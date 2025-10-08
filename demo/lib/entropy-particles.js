@@ -1,19 +1,21 @@
-/** LOGIC TYPES */
+/* --- LOGIC TYPES --- */
+
 /**
- * @typedef Vec2
+ * @typedef {object} Vec2
  * @property {number} x - Horizontal coordinate in 2D space.
  * @property {number} y - Vertical coordinate in 2D space.
  */
 
 /* --- LIB TYPES --- */
+
 /* --- CANVAS --- */
 /**
- * @typedef ScreenDimensions
+ * @typedef {object} ScreenDimensions
  * @property {number} width - Canvas width in pixels.
  * @property {number} height - Canvas height in pixels.
  */
 /**
- * @typedef CanvasConfig
+ * @typedef {object} CanvasConfig
  * @property {ScreenDimensions} size - Canvas dimensions (width and height).
  * @property {number} [threshold] - Extra area outside canvas before removing particles.
  * @property {string} backgroundColor - Background color of the canvas.
@@ -24,14 +26,14 @@
 
 /* --- PARTICLES --- */
 /**
- * @typedef ParticleCurvature
+ * @typedef {object} ParticleCurvature
  * @property {number} [amplitude] - Strength of the oscillation curve applied to movement ("sin"/"cos" only).
  * @property {number} [frequency] - Speed of oscillation for the curve motion ("sin"/"cos" only).
  * @property {'sin' | 'cos' | number} [curve] - Type of curvature applied to particle movement (sinusoidal, cosine, or numeric value).
  * @property {Vec2} [axisCurve] - Defines how curvature is applied across the X/Y axes.
  */
 /**
- * @typedef ParticlesConfig
+ * @typedef {object} ParticlesConfig
  * @property {number} [quantity] - Total number of particles to render.
  * @property {number} [velocity] - Base velocity for particle movement.
  * @property {number} [maxVelocity] - Maximum velocity limit.
@@ -46,37 +48,37 @@
  * @property {ParticleCurvature} [curvature] - Curvature motion configuration for particles.
  */
 /**
- * @typedef InitialPositionsConfig
+ * @typedef {object} InitialPositionsConfig
  * @property {Vec2[]} [targets] - Starting positions where particles will move toward.
  * @property {Vec2[]} [spawners] - Spawn points where particles originate.
  */
 
 /* --- STORAGE --- */
 /**
- * @typedef StorageConfig
+ * @typedef {object} StorageConfig
  * @property {"sessionStorage" | "localStorage"} storageType - Defines which storage type is used to save positions.
  * @property {StoragePositions} [storeListenersPositions] - Determines if positions added via listeners are saved.
  * @property {StoragePositions} [storeNewPositions] - Determines if new positions added via API methods are saved.
  */
 /**
- * @typedef StoragePositions
+ * @typedef {object} StoragePositions
  * @property {boolean} targets - Whether to store target positions.
  * @property {boolean} spawners - Whether to store spawner positions.
  */
 
 /* --- LISTENERS --- */
 /**
- * @typedef ListenerIdentifier
+ * @typedef {object} ListenerIdentifier
  * @property {string} [color] - Color of the listener’s visual marker.
  * @property {number} [size] - Size of the visual marker (square drawn on canvas).
  */
 /**
- * @typedef Listener
+ * @typedef {object} Listener
  * @property {string} [keyboardTrigger] - Key that triggers listener behavior (e.g., spawn or target creation).
  * @property {ListenerIdentifier} [identifier] - Visual settings for listener markers.
  */
 /**
- * @typedef ListenersConfig
+ * @typedef {object} ListenersConfig
  * @property {string} [resetPositions] - Key used to clear all stored positions.
  * @property {string} [downloadPositions] - Key used to export stored positions as JSON.
  * @property {Listener} [spawners] - Listener settings for spawner creation.
@@ -85,7 +87,7 @@
 
 /* --- MAIN CONFIG --- */
 /**
- * @typedef EntropyParticlesConfig
+ * @typedef {object} EntropyParticlesConfig
  * @property {CanvasConfig} canvas - Canvas setup (dimensions, color, and target container).
  * @property {ParticlesConfig} [particles] - Particle behavior and visual configuration.
  * @property {InitialPositionsConfig} [initialPositions] - Starting targets and spawners positions.
