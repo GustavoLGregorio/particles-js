@@ -1,100 +1,99 @@
 /** LOGIC TYPES */
 /**
  * @typedef Vec2
- * @property {number} x
- * @property {number} y
+ * @property {number} x - Horizontal coordinate in 2D space.
+ * @property {number} y - Vertical coordinate in 2D space.
  */
 
 /* --- LIB TYPES --- */
 /* --- CANVAS --- */
 /**
  * @typedef ScreenDimensions
- * @property {number} width
- * @property {number} height
+ * @property {number} width - Canvas width in pixels.
+ * @property {number} height - Canvas height in pixels.
  */
 /**
  * @typedef CanvasConfig
- * @property {ScreenDimensions} size
- * @property {number} [threshold]
- * @property {string} backgroundColor
- * @property {HTMLElement} appendTo
- * @property {"low" | "medium" | "high"} [smoothing]
- * @property {string} id
+ * @property {ScreenDimensions} size - Canvas dimensions (width and height).
+ * @property {number} [threshold] - Extra area outside canvas before removing particles.
+ * @property {string} backgroundColor - Background color of the canvas.
+ * @property {HTMLElement} appendTo - HTML element to append the canvas to.
+ * @property {"low" | "medium" | "high"} [smoothing] - Defines the image smoothing quality for rendering.
+ * @property {string} id - Unique identifier for the canvas element.
  */
 
 /* --- PARTICLES --- */
 /**
  * @typedef ParticleCurvature
- * @property {number} [amplitude]
- * @property {number} [frequency]
- * @property {'sin' | 'cos' | number} [curve]
- * @property {Vec2} [axisCurve]
+ * @property {number} [amplitude] - Strength of the oscillation curve applied to movement ("sin"/"cos" only).
+ * @property {number} [frequency] - Speed of oscillation for the curve motion ("sin"/"cos" only).
+ * @property {'sin' | 'cos' | number} [curve] - Type of curvature applied to particle movement (sinusoidal, cosine, or numeric value).
+ * @property {Vec2} [axisCurve] - Defines how curvature is applied across the X/Y axes.
  */
 /**
  * @typedef ParticlesConfig
- * @property {number} [quantity]
- * @property {number} [velocity]
- * @property {number} [maxVelocity]
- * @property {number} [length]
- * @property {number} [maxLength]
- * @property {number} [size]
- * @property {number} [maxSize]
- * @property {number} [lifespan]
- * @property {number} [maxLifespan]
- * @property {string | string[] | null} [color]
- * @property {number} [spreadFactor]
- * @property {ParticleCurvature} [curvature]
+ * @property {number} [quantity] - Total number of particles to render.
+ * @property {number} [velocity] - Base velocity for particle movement.
+ * @property {number} [maxVelocity] - Maximum velocity limit.
+ * @property {number} [length] - Base length of the particle trail.
+ * @property {number} [maxLength] - Maximum trail length.
+ * @property {number} [size] - Base visual size of each particle.
+ * @property {number} [maxSize] - Maximum particle size.
+ * @property {number} [lifespan] - Base lifespan of a particle (in frames).
+ * @property {number} [maxLifespan] - Maximum lifespan variation.
+ * @property {string | string[] | null} [color] - Color or color palette for particles ('null' for random colors).
+ * @property {number} [spreadFactor] - Defines random dispersion strength during particle movement.
+ * @property {ParticleCurvature} [curvature] - Curvature motion configuration for particles.
  */
 /**
  * @typedef InitialPositionsConfig
- * @property {Vec2[]} [targets]
- * @property {Vec2[]} [spawners]
+ * @property {Vec2[]} [targets] - Starting positions where particles will move toward.
+ * @property {Vec2[]} [spawners] - Spawn points where particles originate.
  */
 
 /* --- STORAGE --- */
 /**
  * @typedef StorageConfig
- * @property {"sessionStorage" | "localStorage"} storageType
- * @property {StoragePositions} [storeListenersPositions]
- * @property {StoragePositions} [storeNewPositions]
+ * @property {"sessionStorage" | "localStorage"} storageType - Defines which storage type is used to save positions.
+ * @property {StoragePositions} [storeListenersPositions] - Determines if positions added via listeners are saved.
+ * @property {StoragePositions} [storeNewPositions] - Determines if new positions added via API methods are saved.
  */
 /**
  * @typedef StoragePositions
- * @property {boolean} targets
- * @property {boolean} spawners
+ * @property {boolean} targets - Whether to store target positions.
+ * @property {boolean} spawners - Whether to store spawner positions.
  */
 
 /* --- LISTENERS --- */
 /**
  * @typedef ListenerIdentifier
- * @property {string} [color]
- * @property {number} [size]
+ * @property {string} [color] - Color of the listener’s visual marker.
+ * @property {number} [size] - Size of the visual marker (square drawn on canvas).
  */
 /**
  * @typedef Listener
- * @property {string} [keyboardTrigger]
- * @property {ListenerIdentifier} [identifier]
+ * @property {string} [keyboardTrigger] - Key that triggers listener behavior (e.g., spawn or target creation).
+ * @property {ListenerIdentifier} [identifier] - Visual settings for listener markers.
  */
 /**
  * @typedef ListenersConfig
- * @property {string} [resetPositions]
- * @property {string} [downloadPositions]
- * @property {Listener} [spawners]
- * @property {Listener} [targets]
+ * @property {string} [resetPositions] - Key used to clear all stored positions.
+ * @property {string} [downloadPositions] - Key used to export stored positions as JSON.
+ * @property {Listener} [spawners] - Listener settings for spawner creation.
+ * @property {Listener} [targets] - Listener settings for target creation.
  */
 
 /* --- MAIN CONFIG --- */
 /**
  * @typedef EntropyParticlesConfig
- * @property {CanvasConfig} canvas
- * @property {ParticlesConfig} [particles]
- * @property {InitialPositionsConfig} initialPositions
- * @property {ListenersConfig} [listeners]
- * @property {ListenersConfig} [initialPositions]
- * @property {StorageConfig} [storage]
+ * @property {CanvasConfig} canvas - Canvas setup (dimensions, color, and target container).
+ * @property {ParticlesConfig} [particles] - Particle behavior and visual configuration.
+ * @property {InitialPositionsConfig} initialPositions - Starting targets and spawners positions.
+ * @property {ListenersConfig} [listeners] - Keyboard/mouse listener configurations.
+ * @property {StorageConfig} [storage] - Storage options for saving and restoring positions.
  */
-//* @property {Vec2[]} [targets]
-//* @property {Vec2[]} [spawners]
+
+// MAIN CLASS
 
 class EntropyParticles {
     // MAIN CONFIG
@@ -444,7 +443,8 @@ class EntropyParticles {
     }
 }
 
-/** PARTICLE */
+// PARTICLES CLASS
+
 class Particle {
     /** @type {ParticlesConfig} */
     config;
