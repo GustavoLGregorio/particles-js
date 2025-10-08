@@ -1,9 +1,8 @@
 # entropy-particles
 
+[![npm](https://img.shields.io/npm/v/entropy-particles.svg)](https://www.npmjs.com/package/entropy-particles)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/GustavoLGregorio/entropy-particles/pulls)
-
-<!-- [![npm](https://img.shields.io/npm/v/entropy-particles.svg)](https://www.npmjs.com/package/entropy-particles) -->
 
 A lightweight and configurable **JavaScript particle engine** for creating dynamic, colorful, and chaotic visual effects.
 
@@ -29,16 +28,10 @@ Using **npm**:
 npm install entropy-particles
 ```
 
-Using **bun**:
-
-```bash
-bun install entropy-particles
-```
-
-Or include manually:
+Or include manually (file is found in the `src` folder):
 
 ```html
-<script src="dist/index.js"><script>
+<script src="lib/entropy-particles.js"><script>
 ```
 
 ## Basic Usage
