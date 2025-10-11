@@ -683,7 +683,7 @@ class Particle {
             Math.abs(this.pos.y - target.y) < velocity &&
             this.targetsArr.length > 0
         ) {
-            // this.target = this.targetsArr[this.targetIndex];
+            this.target = this.targetsArr[this.targetIndex];
         }
     }
 }
