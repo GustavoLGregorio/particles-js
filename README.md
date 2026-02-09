@@ -9,7 +9,11 @@
 [![license](https://img.shields.io/npm/l/entropy-particles.svg?style=flat-square)](https://github.com/GustavoLGregorio/entropy-particles/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue?style=flat-square)](https://www.npmjs.com/package/entropy-particles)
 
-<video src="https://raw.githubusercontent.com/GustavoLGregorio/entropy-particles/main/demo/videos/entropy-particles.mp4" autoplay loop muted playsinline style="max-width: 100%; border-radius: 8px;"></video>
+<a href="https://particles-js-pi.vercel.app">
+  <img src="https://raw.githubusercontent.com/GustavoLGregorio/entropy-particles/main/demo/preview/entropy.gif" alt="Entropy Particles Demo" style="max-width: 100%; border-radius: 8px;" />
+</a>
+
+<sub>🎬 <a href="https://raw.githubusercontent.com/GustavoLGregorio/entropy-particles/main/demo/videos/entropy-particles.mp4">Watch in full quality (MP4)</a></sub>
 
 [Live Demo](https://particles-js-pi.vercel.app) • [Documentation](#%EF%B8%8F-configuration) • [Examples](#-usage)
 
