@@ -1,6 +1,6 @@
 {
     "name": "entropy-particles",
-    "version": "2.1.1",
+    "version": "2.1.2",
     "description": "Lightweight canvas particle system with trail effects, curvature motion, spawn points, and target-based movement. Create dynamic backgrounds, galaxy effects, and chaotic animations with minimal setup.",
     "keywords": [
         "particles",
