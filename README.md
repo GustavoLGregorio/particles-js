@@ -6,11 +6,10 @@
 
 [![npm version](https://img.shields.io/npm/v/entropy-particles.svg?style=flat-square)](https://www.npmjs.com/package/entropy-particles)
 [![npm downloads](https://img.shields.io/npm/dm/entropy-particles.svg?style=flat-square)](https://www.npmjs.com/package/entropy-particles)
-[![npm bundle size](https://img.shields.io/bundlephobia/minzip/entropy-particles?style=flat-square)](https://bundlephobia.com/package/entropy-particles)
 [![license](https://img.shields.io/npm/l/entropy-particles.svg?style=flat-square)](https://github.com/GustavoLGregorio/entropy-particles/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue?style=flat-square)](https://www.npmjs.com/package/entropy-particles)
 
-<video src="https://particles-js-pi.vercel.app/videos/entropy-particles.mp4" autoplay loop muted playsinline style="max-width: 100%; border-radius: 8px;"></video>
+<video src="https://github.com/GustavoLGregorio/entropy-particles/blob/main/demo/videos/entropy-particles.mp4" autoplay loop muted playsinline style="max-width: 100%; border-radius: 8px;"></video>
 
 [Live Demo](https://particles-js-pi.vercel.app) • [Documentation](#configuration) • [Examples](#usage)
 
